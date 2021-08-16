@@ -164,3 +164,8 @@ create a 32-bit executable with "ld -m elf_i386 -o executablename objectfilename
 
 Hopefully the bacwards compatability between 64 and 32bit will mean there arent any errors in the actual code we'll be writing.
 
+*If you're simply looking for a more advanced challenge in assembly language, look into writing network apps using Unix sockets. This involves way less research, and the apps you produce may well be useful for administering servers or other "in the background" software packages that do not require graphical user interfaces.* -Author
+
+
+#Chapter 7 Meeting Machine Instructions
+
