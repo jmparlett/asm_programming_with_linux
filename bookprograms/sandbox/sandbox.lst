@@ -1,0 +1,42 @@
+     1                                  section .data ;this is a comment F 
+     2 00000000 48656C6C6F20576F72-     hi: db "Hello World!"
+     2 00000009 6C6421             
+     3                                  
+     4                                  section .text ;text go here?
+     5                                  
+     6                                    global _start
+     7                                  
+     8                                  _start: ;this seems to be basically the main function
+     9                                    ;program needs to go between the two nops
+    10 00000000 90                        nop ;nop 1 
+    11                                    ;***1***** mov demo
+    12                                    ; mov ax, 067FEh;store hex to ax
+    13                                    ; mov bx, ax; copy hex to bx
+    14                                    ; mov cl, bh; store first byte of bx in low byte of cx
+    15                                    ; mov ch, bl; store second byte of bx to high byte of cx
+    16                                    ; xchg cl, ch; swap low and high of cx
+    17                                    ;****1****
+    18                                  
+    19                                    ;*****2***** move by size and mem location demo
+    20                                    ; mov al, [hi]
+    21                                    ; mov [hi], byte 'G';puts a g at the beginning of hi
+    22                                    ; mov [hi+5], byte '!'; replaces the sixth character in hi with a !
+    23                                    ;*****2*****
+    24                                  
+    25                                    ;*****3***** flags demo
+    26                                    ; mov eax, 0ffffffffh
+    27                                    ; mov ebx, 02dh
+    28                                    ; inc eax
+    29                                    ; dec ebx
+    30                                    ; nop ;nop 2
+    31                                    ;*****3*****
+    32                                  
+    33                                  
+    34                                    ;*****4***** Jump if zero demo
+    35 00000001 B805000000                mov eax, 5; run loop 5 times
+    36 00000006 48                        Jonathan: dec eax ;this is a label
+    37 00000007 75FD                        jnz Jonathan ; jump to label provided if result of last operation wasn't zero
+    38                                    ;*****4***** Jump if zero demo
+    39                                  
+    40                                  
+    41                                    section .bss ;this sections stored uninited data
