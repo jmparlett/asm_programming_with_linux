@@ -33,10 +33,55 @@
     32                                  
     33                                  
     34                                    ;*****4***** Jump if zero demo
-    35 00000001 B805000000                mov eax, 5; run loop 5 times
-    36 00000006 48                        Jonathan: dec eax ;this is a label
-    37 00000007 75FD                        jnz Jonathan ; jump to label provided if result of last operation wasn't zero
+    35                                    ; mov eax, 5; run loop 5 times
+    36                                    ; Jonathan: dec eax ;this is a label
+    37                                      ; jnz Jonathan ; jump to label provided if result of last operation wasn't zero
     38                                    ;*****4***** Jump if zero demo
     39                                  
-    40                                  
-    41                                    section .bss ;this sections stored uninited data
+    40                                    
+    41                                    ;*****5***** infinite loop
+    42                                    ; mov eax, 5
+    43                                    ; j:dec eax
+    44                                      ; jmp j
+    45                                    ;*****5***** infinite loop
+    46                                  
+    47                                  
+    48                                    ;*****6***** 
+    49                                    ; mov eax, 42
+    50                                    ; neg eax
+    51                                    ; add eax, 42
+    52                                  
+    53                                    ; not worth counting
+    54                                    ; mov eax, 07fffffffh
+    55                                    ; inc eax,
+    56                                  
+    57                                    ; xor eax, eax
+    58                                    ; mov ax, -42
+    59                                    ; mov ebx, eax
+    60                                    ; xor eax, eax
+    61                                    
+    62                                    ; mov ax, -42
+    63                                    ; movsx ebx, ax
+    64                                  
+    65                                  
+    66                                    ;******7****** mul demo
+    67                                    ; mov eax, 447 ;smaller than 16^3
+    68                                    ; mov ebx, 1739;smaller then 16^3
+    69                                    ; mul ebx  ;product wont overflow from a single reg since it will less then 16^6
+    70                                    ; look in eax for val
+    71                                  
+    72                                    ; xor eax, eax
+    73                                    ; xor ebx, ebx
+    74                                    ; mov eax, 0ffffffffh ;16^8 will definetly overflow
+    75                                    ; mov ebx, 03b72h ; < 16^5
+    76                                    ; mul ebx; look in eax/edx
+    77                                  
+    78                                  
+    79                                    ;******8****** div demo
+    80 00000001 BB10000000                mov ebx, 010h
+    81 00000006 B820000000                mov eax, 020h
+    82 0000000B F7F3                      div ebx  ;look in eax
+    83                                  
+    84                                  
+    85                                  
+    86                                    section .bss ;this sections stores uninited data

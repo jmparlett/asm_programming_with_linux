@@ -32,10 +32,55 @@ _start: ;this seems to be basically the main function
 
 
   ;*****4***** Jump if zero demo
-  mov eax, 5; run loop 5 times
-  Jonathan: dec eax ;this is a label
-    jnz Jonathan ; jump to label provided if result of last operation wasn't zero
+  ; mov eax, 5; run loop 5 times
+  ; Jonathan: dec eax ;this is a label
+    ; jnz Jonathan ; jump to label provided if result of last operation wasn't zero
   ;*****4***** Jump if zero demo
 
+  
+  ;*****5***** infinite loop
+  ; mov eax, 5
+  ; j:dec eax
+    ; jmp j
+  ;*****5***** infinite loop
 
-  section .bss ;this sections stored uninited data
+
+  ;*****6***** 
+  ; mov eax, 42
+  ; neg eax
+  ; add eax, 42
+
+  ; not worth counting
+  ; mov eax, 07fffffffh
+  ; inc eax,
+
+  ; xor eax, eax
+  ; mov ax, -42
+  ; mov ebx, eax
+  ; xor eax, eax
+  
+  ; mov ax, -42
+  ; movsx ebx, ax
+
+
+  ;******7****** mul demo
+  ; mov eax, 447 ;smaller than 16^3
+  ; mov ebx, 1739;smaller then 16^3
+  ; mul ebx  ;product wont overflow from a single reg since it will less then 16^6
+  ; look in eax for val
+
+  ; xor eax, eax
+  ; xor ebx, ebx
+  ; mov eax, 0ffffffffh ;16^8 will definetly overflow
+  ; mov ebx, 03b72h ; < 16^5
+  ; mul ebx; look in eax/edx
+
+
+  ;******8****** div demo
+  mov ebx, 010h
+  mov eax, 020h
+  div ebx  ;look in eax
+
+
+
+  section .bss ;this sections stores uninited data
