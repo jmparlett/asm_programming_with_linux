@@ -67,7 +67,7 @@
     66                                    ;******7****** mul demo
     67                                    ; mov eax, 447 ;smaller than 16^3
     68                                    ; mov ebx, 1739;smaller then 16^3
-    69                                    ; mul ebx  ;product wont overflow from a single reg since it will less then 16^6
+    69                                    ; mul ebx  ;product wont overflow from a single reg since it will be less then 16^6
     70                                    ; look in eax for val
     71                                  
     72                                    ; xor eax, eax

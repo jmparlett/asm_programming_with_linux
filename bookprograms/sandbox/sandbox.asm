@@ -66,7 +66,7 @@ _start: ;this seems to be basically the main function
   ;******7****** mul demo
   ; mov eax, 447 ;smaller than 16^3
   ; mov ebx, 1739;smaller then 16^3
-  ; mul ebx  ;product wont overflow from a single reg since it will less then 16^6
+  ; mul ebx  ;product wont overflow from a single reg since it will be less then 16^6
   ; look in eax for val
 
   ; xor eax, eax

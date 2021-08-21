@@ -169,3 +169,263 @@ Hopefully the bacwards compatability between 64 and 32bit will mean there arent 
 
 #Chapter 7 Meeting Machine Instructions
 
+A starting point must be defined in an asm files such as the lable "\_start"
+You must also have a .text and .data section
+
+a new section is defined by section .data for example
+
+.data: holds data items that to be given initial value when the program runs.
+.text: holds program code
+.bss: hold unitialized data. Space for data items given no inital value. They may receive value during program execution.
+
+##Instructions
+MOV: moves a byte, word dword, or quadword (x64) from one reg to another or from mem into a reg. It cannot move from memory to memory however.
+that can be accomplished with two MOVs though.
+
+syntax: mov <dest>, <source>
+example: mov eax, 1;moves 1 into the eax register
+
+In general when a machine instruction generates a new value, the new value is placed in the destination operand.
+
+hex neumbers are denoted with lowercase 'h' such as '42h'
+
+[EBP] = datastored at location specified by EBP
+
+mov edx, [ESI]
+
+When you supply data directly inside an instruction it is called direct addressing such as in "mov eax, 42h" here 42h is direct data.
+register addressing is when you reference a register in an instruction, and register data is data stored inside a register.
+
+You cannot mix register of different sizes. Dont try to move from a 32bit reg to a 16 or vice versa.
+
+The following are valid ways to access data at a memory location specified by a register.
+mov eax,[ebx+16
+mov eax,[ebx+ecx]
+mov eax,[ebx+ecx+11]
+The result of any of these operations is an effective address. You cannot however add 3 or more registers to get an effective address.
+
+In assembly variables represent addresses not the actual data itself.
+EatMsg: db "hello world"
+mov ecx, EatMsg
+here the string itself is not stored in ecx just the address of the string.
+You can access the data in a variable with square brackets [EatMsg]
+
+mov edx, [EatMsg]
+moves the first four bytes (in this case the ascii chars "hell") into ecx
+to move only one byte of EatMsg you would have to store it to a one byte location.
+mov al, [EatMsg]
+would move the first ascii char "h" into the low order bits of eax
+similar tricks work by referencing the 16bit and 64bit names of the register.
+
+you can move a certain amount of bytes to memory by using a size specifier.
+mov [EatMsg], byte 'G'
+
+Inc: this instruction takes a single operand and increases it by one
+Dec: flipside of inc
+
+
+#### Flags register
+OF: the overflow flag is set(1) when the result of an arithmetic operation on a signed integer quantity becomes too large to fit in the operand it originally occupied.
+    Generally used as the carry flag in signed arithmetic.
+
+
+DF: the direction flag tell the CPU the direction that activity moves (what?) either up-memory or down memory during the exevution of string instructions.
+    set(1) means string in structions proceed from high memory to low memory. Recall that moving a string to a register stores it backwards in the register 
+    so it sounds like set should be the default. When DF is cleared(0) strings instructions proceed from low to high memory.
+
+IF: Interrupt flag. Can be set by using the STI and CLI instructions, also set by the CPU under certain conditions. When set Interrupts are enabled and may
+    occur when requested. when clear interrupts are ignored by the CPU. IF was accessed by all programs back in real mode, however under protected you cannot
+    use STI and CLI. If a program attempts to it will be terminated.
+
+TF: the trap flag allows debuggers to single step the CPU when set. You'll never use it unless you find yourself trouble a malfunctioning CPU someday.
+
+SF: sign flag is set when the result of an op forces the operand to become negative (the MSB sign bit becomes 1). Any op that makes the sign positive will clear SF.
+
+ZF: the zero flag is set when the result of an operation is zero. This is used a lot for conditional jumps.
+
+AF: the auxiliary carry flag is used for BCD arithmetic. 
+
+PF: the parity flag indicates whether the number of set bits in the low-order byte of a result is even or odd. It is on if it is even and off if it is not.
+    This is relavant to hamming codes, but this flag is obsolete and was primarily used for serial port communication. I guess thats why it only checks low order bits.
+    
+CF: the carry flag is used in unsigned arithmetic ops already familar with this from the 8TIAC.
+
+Everything just summerized about flags is super general and should not be taken as gospel. I guess these have been used in a lot of weird ways over the years and a lot of 
+instructions will affect them differently.
+
+
+### Conditonal Jumps
+This is how flow control is handled at the lowest level.
+
+JNZ: Jump if not zero test the ZF flag. If ZF is set(1) nothing happens if ZF is unset(0) then execution moves to the label specified in the JNZ instruction.
+Labels: descriptive names given to locations in your program. In NASM a label is a character string followed by a colon.
+
+MOVSX: exchange a signed value between registers of different size. So it can move a 16 bit negative val to a 32 bit reg and retain the sign.
+r32, r12, r8, are shorthand for xbit register r32 = any 32 bit register. The notation r/m means register or memory. Combining them r/m16 means any 16 bit register or memory location.
+
+Certain instructions have implicit and explicit operands than can be misleading.
+
+MUL: multiply unsigned vals. This is one of the instructions with implicit operands. The syntax is simply mul r8 but the implicit idea is that you will be multipling by the 
+value in the lower 8bits of AX name AL and the product will be stored in AX. This is why AX is called the accumulator in x86. This is all based off the fact that the largest
+product of two binary numbers will by twice the bits of the factors (just think about 2^8 * 2^8). Similarly for mul r16 implicit args would be ax and DX and AX for the product (EAX).
+Not so similary mul r32 implicits are EAX and EDX and EAX for the product.
+
+DIV: divide unsigned vals. DIV is similar to mul with all the implicit arguments. Basically you specify a value in a register to divide the value in EDX( or AL or AX, etc based on size). You can also hold a 64bit value in EAX and EDX and DIV r32 will divide the value in
+the two registers. Zero division errors are a thing in assembly. Attemping to divide by zero OR divide zero by anything will get your program whacked by linux. You must test your values before attemping a division.
+
+IMUL: multiply signed vals
+
+IDIV: divide signed vals
+
+NEG: negates the value of the operand. Can also be used on a memory location but you must specify a byte size such as NEG word [BX] 
+
+There are sometimes different legal cases for instructions. POP AX vs POP SI for example. Be aware that each legal case is actually a different opcode 058h vs 05Eh for the previous example.
+Legal forms are described in the x86 manuals.
+
+
+# Chapter 8 Creating Programs That Work
+
+#### Header Comments contain
+-Name of the file
+-Name of the exe file
+-Date created
+-Date last modified
+-Author
+-Name of assembler version used to create it
+-Overview of what the program does
+-Commands used to build the file
+
+## Sections
+
+Sections should be laid out in the order of .data, .bss, then .text
+### .data
+definitions of initialized data items. These are basically variables. Their definition in the data section means they will be loaded to memory with the program.
+This effectivly means no instructions or will be used to create them so no cycles are wasted to load them. Since these are stored with the executable the more you have
+the larger the exe.
+
+### .bss
+Data buffers are defined in the .bss section. You set aside a number of bytes for buffers and give the buffers names but you don't say what will be stored there yet.
+
+A key difference between this and the data section is that this section takes no extra space in your executable.
+
+### .text
+This is where are your actual written machine instructions should be placed in the file.
+
+## Labels
+Bookmarks for program code. Identifies locations for jumps and calls. Must begin with a letter, underscore, period, or question mark (random but okay).
+Labels must be followed by a colon when they are defined. The colon is only used in the definition not when you are specifing a label for a jump. They are case sensitive.
+
+Every linux assembly program must be marked with a "\_start" label. It is case sensitive. It must be marked global at the top of the text section.
+
+## Variables
+A variable is defined by associating an identifier with a *data definition directive*.
+
+Examples
+mibite db 07h ;8 bits
+myword db 077ffh ;16 bits
+mydouble dd 0ff0077ffh ;32 bits
+
+d\<x> can be thought of as define\<byte|word|dword|etc>
+
+Strings are a sequence of characters in a row in memory. Their definition is a bit irregular since normally definition sets aside a specific amount of memory.
+Instead when a string is defined db simply sets a aside one byte that points to its starting location.
+
+Example: mystring = db "this is a strings contain it's",10
+
+Notice the single quote means the string must be delimited with double quotes. The 10 at the end is simply the value of EOL in linux or more familiarly '\n' char in ASCII.
+Its definition as the linux EOL is little confusing when thinking about what C defines as the EOL char.
+
+Example TwoLines: db "This is one line ...", 10, "... and this is another!", 10
+
+You may define strings with other data types, but the treatment is a little different.
+
+WS: dw 'CQ' ;defines a two byte string. In this case WS is not simply a pointer to the start
+DDS: dd 'Stop' ; similar to WS but using the double type allows for 4 chars of storage.
+
+This allows you to load the actual string into a register instead of just a pointer to it. Actully using this is rare apparently.
+
+
+EQU: equate associates a value with a label. Anytime an equate is encountered during assembly the equ's name is swapped for its value. So basically a C macro.
+
+example: EatLen: equ $-EatMsg ; equates the EatLen var with the length of eat msg
+         FieldWidth equ 10; anywhere the FieldWidth label is used it will be swapped with 10
+
+The dollar sign $ is the "here" token. 
+
+Here token $: This is interesting. $ marks the spot where NASM is in the intermediate file (not the source file). The label EatMsg marks the beginning of the string.
+When NASM reaches the EatLen label the val of $ is the location immediately after the last character of EatMsg. This is an example of an assembly time calclulation.
+So $-EatMsg is not some magical syntax it is just a subtraction. Namely you are subtracting the pointer at the start of the string from the pointer at the end of the string.
+
+### The Stack
+The x86 stack is a LIFO data structure. Chunks of data are pushed onto the top of the stack and they remain on the stack until we pull them off in reverse order.
+The Stack exists in memory and is in fact a way of managing memory. Normal stack ops push, pop work as expected.
+
+ESP Register: This is the stack pointer. It holds the memory address of the last item pushed onto the stack.
+
+The stack can visualized as growing downward. It starts at the ceiling and as data is pushed to it, it grows downward.
+
+Linux organizes the memory allocated to your program more or less like this.
+1. The Stack
+2. Free Memory
+3. .bss
+4. .data
+5. .text
+
+ESP always points to the last item in the stack and moves up and down as items are pushed and popped from the stack.
+
+#### Push Instrutions
+PUSH: push a 16 or 32 bit reg or mem value that is specified in your source code.
+PUSHF: push the 16 bit flags register to the stack
+PUSHFD: pushed the 32 bit flags reg to the stack
+PUSHA: push all eight of the general purpose registers onto the stack.
+PUSHAD: push all eight of the 32 bit general purpose register to the stack.
+
+You cannot push a 8 bit register onto the stack.
+### Pop commands
+popf      ; Pop the top 2 bytes from the stack into Flags
+popa      ; Pop the top 16 bytes from the stack into AX, CX, DX, BX,
+; BP, SI, and DI...but NOT SP!
+popad     ; Pop the top 32 bytes from the stack into EAX, ECX, EDX, EBX,
+; EBP, ESI and EDI...but NOT ESP!!!
+pop cx    ; Pop the top 2 bytes from the stack into CX
+pop esi   ; Pop the top 4 bytes from the stack into ESI
+pop [ebx] ; Pop the top 4 bytes from the stack into memory at EBX
+
+how much you pop from the stack depends on your arguments. If you pop to a 16 bit register you will take the top two bytes.
+
+POP Process:
+1. the data at [ESP] is copied from the stack and placed in pops operand
+2. ESP is incremented by the size of the operand. This means ESP moves either two or four bytes up the stack.
+
+ESP is decremented **Before** placing a word on the stack at push time, but incremented **after** removing a word at pop time.
+**Unless the stack is completely empty SP points to real data.** 
+
+### Software Interrupts
+Kernal Service Call Gate: A gateway between user and kernal space. This allows you to call service routines in linux.
+It is implemented via software interrupts.
+
+At the start of memory (segment 0 offset 0), there is a special lookup table with 256 entries. Each entry is a complete memory address to include segment and offset for a total of 4 bytes (so probably 64 in x86).
+The first 1024 bytes in any x86 machine are reserved for this table. Each address in the table is an interrupt vector numbered from 0 to 255. Vector 0 is bytes 0-3 in the table.
+The number of the interrupt holds a particular address. 80h points to the **service dispatcher**.
+
+When INT 80h is called linux will jump program to the execution of the interrupt vector located at 80h, but the service dispatcher controls a ton of services and you have to specify which one you want.
+The service dispatcher knows what service want by checking the EAX register for the service number. Beyond that different services will expect different things in different registers
+in order to do what is asked of them.
+
+```
+imov eax,4        ; Specify sys_write syscall
+mov ebx,1        ; Specify File Descriptor 1: Standard Output
+mov ecx,EatMsg   ; Pass offset of the message
+mov edx,EatLen   ; Pass the length of the message
+int 80H          ; Make syscall to output the text to stdout
+```
+
+The INT command also stores the location of the next machine instruction on the stack before handing execution to the kernal. The kernal hands control back to the userspace
+program by poping that address from the stack and jumping to it.
+
+**Exiting a program**
+```
+mov eax,1         ; Specify Exit syscall
+mov ebx,0         ; Return a code of zero
+int 80H           ; Make the syscall to terminate the program
+```
