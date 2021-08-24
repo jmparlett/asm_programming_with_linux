@@ -429,3 +429,19 @@ mov eax,1         ; Specify Exit syscall
 mov ebx,0         ; Return a code of zero
 int 80H           ; Make the syscall to terminate the program
 ```
+
+
+
+We'll be working under Linux.
+
+The data exists in disk files.
+
+We do not know ahead of time how large any of the files will be.
+
+There is no maximum or minimum size for the files.
+
+We will use I/O redirection to pass filenames to the program.
+
+All the input files are in the same encoding scheme. The program can assume that an "a" character in one file is encoded the same way as an "a" in another file. (In our case, this is ASCII.)
+
+We must preserve the original file in its original form, rather than read data from the original file and then write it back to the original file. (That's because if the process crashes, we've destroyed the original file without completely generating an output file.)

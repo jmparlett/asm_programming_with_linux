@@ -1,0 +1,84 @@
+     1                                  ;filename: uppercase.asm
+     2                                  ;description: take in a file and output the file with all lowercase chars converted uppercase
+     3                                  
+     4                                  ;process
+     5                                  ;read char from (stdin)
+     6                                  ;test if we have reached EOF
+     7                                  ;test if char is lowercase (61h <= char <= 7Ah)
+     8                                  ;if char is lowercase convert to uppercase by subtraction 20h (char -= 20h)
+     9                                  ;write char to (stdout).
+    10                                  ;repeat until done (EOF is read from stdin)
+    11                                  ;exit program by calling sys_exit
+    12                                  
+    13                                  ;process 2
+    14                                  ;READ:
+    15                                  ;set up registers for sys_read call
+    16                                  ;call sys_read on stdin
+    17                                  ;test for EOF
+    18                                  ;if EOF jump to exit
+    19                                  
+    20                                  ;test if char is lowercase
+    21                                  ;if char is not lowercase jump to write
+    22                                  ;if char is lowercase convert to upper by subtracting 20h
+    23                                  
+    24                                  ;WRITE
+    25                                  ;set up registers for sys_write call
+    26                                  ;call sys_write on stdout
+    27                                  
+    28                                  ;jump to READ:
+    29                                  
+    30                                  ;EXIT
+    31                                  ;set up registers for sys_exit call
+    32                                  ;call sys_exit with exit code 0
+    33                                  
+    34                                  
+    35                                  section .bss
+    36 00000000 ??                              Buff resb 1
+    37                                  section .data
+    38                                  
+    39                                  section .text 
+    40                                    
+    41                                    global _start
+    42                                  
+    43                                  
+    44                                  _start:
+    45                                  
+    46 00000000 90                        nop; for the debugs
+    47                                  
+    48                                    ;read one char from stdin and store to buffer
+    49 00000001 B803000000                Read: mov eax, 3; move service number for sys_read call to eax
+    50 00000006 BB00000000                      mov ebx, 0; file descriptor will be stdin (0)
+    51 0000000B B9[00000000]                    mov ecx, Buff ; store address of buffer to ecx
+    52 00000010 BA01000000                      mov edx, 1 ; tell sys_read to read one char from stdin
+    53 00000015 CD80                            int 80h ;make sys_read call
+    54                                  
+    55 00000017 83F800                          cmp eax, 0; check if sys_reads return value is zero (a zero return value indicates EOF)
+    56                                    
+    57 0000001A 7431                      je Exit ;jump if comparison is positive
+    58                                            ;if not equal fall through
+    59                                    ;comparison works by setting flags based on if 
+    60                                    ;operand 1 = operand 2; ZF=1, CF=0
+    61                                    ;operand 1 < operand 2; ZF=0, CF=1
+    62                                    ;operand 1 > operand 2; ZF=0. CF=0
+    63                                  
+    64                                    ;now we've read a character lets check if lower or uppercase and convert if necessary
+    65 0000001C 803D[00000000]61          cmp byte [Buff], 61h; 61h = 'a'
+    66 00000023 7210                      jb Write ; jb = jump if below. If its below 'a' its not lowercase
+    67                                  
+    68 00000025 803D[00000000]7A          cmp byte [Buff], 7Ah; 7Ah = 'z'
+    69 0000002C 7707                      ja Write ; ja = jump if above. If its above 'z' its not lowercase. Its not even an alpha char
+    70                                  
+    71                                    ;we know its a lower case char so lets convert it
+    72 0000002E 802D[00000000]20          sub byte [Buff], 20h;
+    73                                  
+    74                                  
+    75 00000035 B804000000                Write: mov eax, 4; specify sys_write service number
+    76 0000003A BB01000000                       mov ebx, 1; specify stdout for write
+    77 0000003F B9[00000000]                     mov ecx, Buff; pass address of char to write
+    78 00000044 BA01000000                       mov edx, 1 ; edx will specify number of chars to write
+    79 00000049 CD80                             int 80h; make sys_write call
+    80 0000004B EBB4                             jmp Read;move to start of prog to continue reading as long as thiers input
+    81                                  
+    82 0000004D B801000000                Exit: mov eax, 1; specify sys_exit service number
+    83 00000052 BB00000000                      mov ebx, 0; exit code 0
+    84 00000057 CD80                            int 80h; make exit call

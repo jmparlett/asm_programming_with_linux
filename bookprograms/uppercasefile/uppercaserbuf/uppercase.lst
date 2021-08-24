@@ -1,0 +1,108 @@
+     1                                  ;filename: uppercase.asm
+     2                                  ;description: take in a file and output the file with all lowercase chars converted uppercase
+     3                                  ;This is the version using a 1024 character buffer instead of reading a char at a time from stdin
+     4                                  
+     5                                  ;process
+     6                                  ;read char from (stdin)
+     7                                  ;test if we have reached EOF
+     8                                  ;test if char is lowercase (61h <= char <= 7Ah)
+     9                                  ;if char is lowercase convert to uppercase by subtraction 20h (char -= 20h)
+    10                                  ;write char to (stdout).
+    11                                  ;repeat until done (EOF is read from stdin)
+    12                                  ;exit program by calling sys_exit
+    13                                  
+    14                                  ;process 2
+    15                                  ;READ:
+    16                                  ;set up registers for sys_read call
+    17                                  ;call sys_read to read a buffer full of characters from stdin
+    18                                  ;store characters read in esi
+    19                                  ;test for EOF (eax = 0)
+    20                                  ;if EOF jump to exit
+    21                                  
+    22                                  ;Scan:
+    23                                  ;setup registers as a pointer to scan the buffer.
+    24                                  ;put address of buffer in ebp
+    25                                  ;put num of chars read in ecx
+    26                                  
+    27                                  ;test the character at buffer pointer to see if its lowercase
+    28                                  ;compare byte at [ebp + ecx] against 'a'
+    29                                  ;if byte is below 'a' jump to write
+    30                                  ;if byte is above 'z' jump to write
+    31                                  ;else sub 20h from byte at [ebp + ecx]
+    32                                  
+    33                                  ; Next:
+    34                                  ;decrement ecx by one
+    35                                  ;jmp if not zero to scan
+    36                                  ;if chars still in buffer jump to scan
+    37                                  
+    38                                  ;WRITE
+    39                                  ;set up registers for sys_write call
+    40                                  ;call sys_write to write processed buffer on stdout
+    41                                  
+    42                                  ;jump to READ to get another buffer of chars
+    43                                  
+    44                                  ;EXIT
+    45                                  ;set up registers for sys_exit call
+    46                                  ;call sys_exit with exit code 0
+    47                                  
+    48                                  
+    49                                  section .bss
+    50                                          BUFFLEN equ 1024; buffer len basically a defines usage
+    51 00000000 <res 400h>                      Buff: resb BUFFLEN; text buffer
+    52                                  section .data
+    53                                  
+    54                                  section .text 
+    55                                    
+    56                                    global _start
+    57                                  
+    58                                  
+    59                                  _start:
+    60                                  
+    61 00000000 90                        nop; for the debugs
+    62                                  
+    63                                    ;read one char from stdin and store to buffer
+    64 00000001 B803000000                Read: mov eax, 3; move service number for sys_read call to eax
+    65 00000006 BB00000000                      mov ebx, 0; file descriptor will be stdin (0)
+    66 0000000B B9[00000000]                    mov ecx, Buff ; store address of buffer to ecx
+    67 00000010 BA00040000                      mov edx, BUFFLEN; specify to read a buffers worth of chars
+    68 00000015 CD80                            int 80h ;make sys_read call to fill buff
+    69 00000017 89C6                            mov esi, eax; store sys_read return val
+    70 00000019 83F800                          cmp eax, 0; check for eof
+    71 0000001C 7433                            je Exit; if reached eof exit
+    72                                    ;comparison works by setting flags based on if 
+    73                                    ;operand 1 = operand 2; ZF=1, CF=0
+    74                                    ;operand 1 < operand 2; ZF=0, CF=1
+    75                                    ;operand 1 > operand 2; ZF=0. CF=0
+    76                                  
+    77                                    ;set regs for processing buffer
+    78 0000001E 89F1                            mov ecx, esi; move num chars read to ecx
+    79 00000020 BD[00000000]                    mov ebp, Buff; store pointer to start of Buffer to ebp
+    80 00000025 4D                              dec ebp; adjust count to offset. Basically index -1 if i am understanding which seems real risky
+    81                                  
+    82                                    Scan: ; process buffer
+    83                                    ;check if current char is lowercase
+    84 00000026 807C0D0061                cmp byte [ebp + ecx], 61h; 61h = 'a'
+    85 0000002B 720C                      jb Next; jb = jump if below. If its below 'a' its not lowercase
+    86                                  
+    87 0000002D 807C0D007A                cmp byte [ebp + ecx], 7Ah; 7Ah = 'z'
+    88 00000032 7705                      ja Next; ja = jump if above. If its above 'z' its not lowercase. Its not even an alpha char
+    89                                  
+    90                                    ;we know its a lower case char so lets convert it
+    91 00000034 806C0D0020                sub byte [ebp + ecx], 20h;
+    92                                  
+    93 00000039 49                        Next: dec ecx; decrement index
+    94 0000003A 75EA                            jnz Scan; continue loop until ecx is 0 and we have processed all chars
+    95                                  
+    96                                  
+    97                                    ;write full buffer of text to stdout
+    98 0000003C B804000000                Write: mov eax, 4; specify sys_write service number
+    99 00000041 BB01000000                       mov ebx, 1; specify stdout for write
+   100 00000046 B9[00000000]                     mov ecx, Buff; pass buffer address
+   101 0000004B 89F2                             mov edx, esi; move num chars in buf to edx. This is why we saved the return val of sys_read
+   102 0000004D CD80                             int 80h; make sys_write call
+   103 0000004F EBB0                             jmp Read;move to start of prog to continue reading as long as theres input
+   104                                  
+   105                                    ;were done dip
+   106 00000051 B801000000                Exit: mov eax, 1; specify sys_exit service number
+   107 00000056 BB00000000                      mov ebx, 0; exit code 0
+   108 0000005B CD80                            int 80h; make exit call
