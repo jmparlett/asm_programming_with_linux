@@ -43,7 +43,7 @@
 
 ;READERROR
 ;setup registers for sys_write call
-;write write error to stdout
+;write read error to stdout
 ;jump to EXIT
 
 ;WRITEERROR
@@ -84,6 +84,7 @@ _start:
         mov esi, eax; store sys_read return val
         cmp eax, 0; check for eof
         je Exit; if reached eof exit
+        jb ReadError; jump to error block if exit code is neg
   ;comparison works by setting flags based on if 
   ;operand 1 = operand 2; ZF=1, CF=0
   ;operand 1 < operand 2; ZF=0, CF=1
@@ -115,9 +116,30 @@ _start:
          mov ecx, Buff; pass buffer address
          mov edx, esi; move num chars in buf to edx. This is why we saved the return val of sys_read
          int 80h; make sys_write call
+         cmp eax,0
+         jb WriteError; move to error block if exit code is neg
          jmp Read;move to start of prog to continue reading as long as theres input
+
+  WriteError: mov eax, 4;sys_write service num
+              mov ebx, 1;specify stdout
+              mov ecx, fwerr; pass error msg pointer
+              mov edx, fwerrlen; pass len of msg
+              int 80h; make sys_call
+              jmp ExitErr
+
+  ReadError: mov eax, 4;sys_write service num
+              mov ebx, 1;specify stdout
+              mov ecx, frerr; pass error msg pointer
+              mov edx, frerrlen; pass len of msg
+              int 80h; make sys_call
+              jmp ExitErr
 
   ;were done dip
   Exit: mov eax, 1; specify sys_exit service number
         mov ebx, 0; exit code 0
         int 80h; make exit call
+
+
+  ExitErr: mov eax, 1; specify sys_exit service number
+           mov ebx, -1; exit code -1 since error occured
+           int 80h; make exit call

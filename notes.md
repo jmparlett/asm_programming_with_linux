@@ -445,3 +445,24 @@ We will use I/O redirection to pass filenames to the program.
 All the input files are in the same encoding scheme. The program can assume that an "a" character in one file is encoded the same way as an "a" in another file. (In our case, this is ASCII.)
 
 We must preserve the original file in its original form, rather than read data from the original file and then write it back to the original file. (That's because if the process crashes, we've destroyed the original file without completely generating an output file.)
+
+
+
+## Chapter 9 Bits, Flags, Branches, and Tables
+Shift vs Rotate: Shift instructions dump any overflow to the carry bit. If you want to do something with said bit you must do it before executing an instruction that affects the carry flag.
+Rorates do not push overflow to the void the over flowbits are put at the beggining of the string.
+
+Rotate Instructions: RCL, RCR, ROL
+
+Conditional jump instructions usually have a counterpart that jumps in the absence of the condition. For example the counterpart of JZ (jump if zero) is JNZ (jump if not zero)
+JZ jumps when the zero flag is set and JNZ jumps if the zero flag is not set.
+
+More jumps: JLE(jump if less than or equal to) == JNG(jump if not greater)
+
+Signed and unsigned values have different comparison operators. 
+Signed = *greater than or less then* JG after a compare.
+Unsigned = *above or below* JA after a compare
+
+BT(bit test) moves the value of the specified bit in its first operand to the carry flag. This can be useful for testing single bits. BT eax, 4 tests bit 4 in eax.
+
+

@@ -41,68 +41,111 @@
     41                                  
     42                                  ;jump to READ to get another buffer of chars
     43                                  
-    44                                  ;EXIT
-    45                                  ;set up registers for sys_exit call
-    46                                  ;call sys_exit with exit code 0
-    47                                  
+    44                                  ;READERROR
+    45                                  ;setup registers for sys_write call
+    46                                  ;write read error to stdout
+    47                                  ;jump to EXIT
     48                                  
-    49                                  section .bss
-    50                                          BUFFLEN equ 1024; buffer len basically a defines usage
-    51 00000000 <res 400h>                      Buff: resb BUFFLEN; text buffer
-    52                                  section .data
+    49                                  ;WRITEERROR
+    50                                  ;setup registers for sys_write call
+    51                                  ;write write error to stdout
+    52                                  ;jump to EXIT
     53                                  
-    54                                  section .text 
-    55                                    
-    56                                    global _start
-    57                                  
+    54                                  
+    55                                  ;EXIT
+    56                                  ;set up registers for sys_exit call
+    57                                  ;call sys_exit with exit code 0
     58                                  
-    59                                  _start:
-    60                                  
-    61 00000000 90                        nop; for the debugs
-    62                                  
-    63                                    ;read one char from stdin and store to buffer
-    64 00000001 B803000000                Read: mov eax, 3; move service number for sys_read call to eax
-    65 00000006 BB00000000                      mov ebx, 0; file descriptor will be stdin (0)
-    66 0000000B B9[00000000]                    mov ecx, Buff ; store address of buffer to ecx
-    67 00000010 BA00040000                      mov edx, BUFFLEN; specify to read a buffers worth of chars
-    68 00000015 CD80                            int 80h ;make sys_read call to fill buff
-    69 00000017 89C6                            mov esi, eax; store sys_read return val
-    70 00000019 83F800                          cmp eax, 0; check for eof
-    71 0000001C 7433                            je Exit; if reached eof exit
-    72                                    ;comparison works by setting flags based on if 
-    73                                    ;operand 1 = operand 2; ZF=1, CF=0
-    74                                    ;operand 1 < operand 2; ZF=0, CF=1
-    75                                    ;operand 1 > operand 2; ZF=0. CF=0
-    76                                  
-    77                                    ;set regs for processing buffer
-    78 0000001E 89F1                            mov ecx, esi; move num chars read to ecx
-    79 00000020 BD[00000000]                    mov ebp, Buff; store pointer to start of Buffer to ebp
-    80 00000025 4D                              dec ebp; adjust count to offset. Basically index -1 if i am understanding which seems real risky
-    81                                  
-    82                                    Scan: ; process buffer
-    83                                    ;check if current char is lowercase
-    84 00000026 807C0D0061                cmp byte [ebp + ecx], 61h; 61h = 'a'
-    85 0000002B 720C                      jb Next; jb = jump if below. If its below 'a' its not lowercase
-    86                                  
-    87 0000002D 807C0D007A                cmp byte [ebp + ecx], 7Ah; 7Ah = 'z'
-    88 00000032 7705                      ja Next; ja = jump if above. If its above 'z' its not lowercase. Its not even an alpha char
-    89                                  
-    90                                    ;we know its a lower case char so lets convert it
-    91 00000034 806C0D0020                sub byte [ebp + ecx], 20h;
+    59                                  
+    60                                  section .bss
+    61                                          BUFFLEN equ 1024; buffer len basically a defines usage
+    62 00000000 <res 400h>                      Buff: resb BUFFLEN; text buffer
+    63                                  section .data
+    64 00000000 4572726F723A206361-             frerr: db "Error: cannot open file for reading"
+    64 00000009 6E6E6F74206F70656E-
+    64 00000012 2066696C6520666F72-
+    64 0000001B 2072656164696E67   
+    65                                          frerrlen: equ $-frerr
+    66                                  
+    67 00000023 4572726F723A206361-             fwerr: db "Error: cannot open file for writing"
+    67 0000002C 6E6E6F74206F70656E-
+    67 00000035 2066696C6520666F72-
+    67 0000003E 2077726974696E67   
+    68                                          fwerrlen: equ $-frerr
+    69                                  section .text 
+    70                                    
+    71                                    global _start
+    72                                  
+    73                                  
+    74                                  _start:
+    75                                  
+    76 00000000 90                        nop; for the debugs
+    77                                  
+    78                                    ;read one char from stdin and store to buffer
+    79 00000001 B803000000                Read: mov eax, 3; move service number for sys_read call to eax
+    80 00000006 BB00000000                      mov ebx, 0; file descriptor will be stdin (0)
+    81 0000000B B9[00000000]                    mov ecx, Buff ; store address of buffer to ecx
+    82 00000010 BA00040000                      mov edx, BUFFLEN; specify to read a buffers worth of chars
+    83 00000015 CD80                            int 80h ;make sys_read call to fill buff
+    84 00000017 89C6                            mov esi, eax; store sys_read return val
+    85 00000019 83F800                          cmp eax, 0; check for eof
+    86 0000001C 746A                            je Exit; if reached eof exit
+    87 0000001E 7250                            jb ReadError; jump to error block if exit code is neg
+    88                                    ;comparison works by setting flags based on if 
+    89                                    ;operand 1 = operand 2; ZF=1, CF=0
+    90                                    ;operand 1 < operand 2; ZF=0, CF=1
+    91                                    ;operand 1 > operand 2; ZF=0. CF=0
     92                                  
-    93 00000039 49                        Next: dec ecx; decrement index
-    94 0000003A 75EA                            jnz Scan; continue loop until ecx is 0 and we have processed all chars
-    95                                  
-    96                                  
-    97                                    ;write full buffer of text to stdout
-    98 0000003C B804000000                Write: mov eax, 4; specify sys_write service number
-    99 00000041 BB01000000                       mov ebx, 1; specify stdout for write
-   100 00000046 B9[00000000]                     mov ecx, Buff; pass buffer address
-   101 0000004B 89F2                             mov edx, esi; move num chars in buf to edx. This is why we saved the return val of sys_read
-   102 0000004D CD80                             int 80h; make sys_write call
-   103 0000004F EBB0                             jmp Read;move to start of prog to continue reading as long as theres input
-   104                                  
-   105                                    ;were done dip
-   106 00000051 B801000000                Exit: mov eax, 1; specify sys_exit service number
-   107 00000056 BB00000000                      mov ebx, 0; exit code 0
-   108 0000005B CD80                            int 80h; make exit call
+    93                                    ;set regs for processing buffer
+    94 00000020 89F1                            mov ecx, esi; move num chars read to ecx
+    95 00000022 BD[00000000]                    mov ebp, Buff; store pointer to start of Buffer to ebp
+    96 00000027 4D                              dec ebp; adjust count to offset. Basically index -1 if i am understanding which seems real risky
+    97                                  
+    98                                    Scan: ; process buffer
+    99                                    ;check if current char is lowercase
+   100 00000028 807C0D0061                cmp byte [ebp + ecx], 61h; 61h = 'a'
+   101 0000002D 720C                      jb Next; jb = jump if below. If its below 'a' its not lowercase
+   102                                  
+   103 0000002F 807C0D007A                cmp byte [ebp + ecx], 7Ah; 7Ah = 'z'
+   104 00000034 7705                      ja Next; ja = jump if above. If its above 'z' its not lowercase. Its not even an alpha char
+   105                                  
+   106                                    ;we know its a lower case char so lets convert it
+   107 00000036 806C0D0020                sub byte [ebp + ecx], 20h;
+   108                                  
+   109 0000003B 49                        Next: dec ecx; decrement index
+   110 0000003C 75EA                            jnz Scan; continue loop until ecx is 0 and we have processed all chars
+   111                                  
+   112                                  
+   113                                    ;write full buffer of text to stdout
+   114 0000003E B804000000                Write: mov eax, 4; specify sys_write service number
+   115 00000043 BB01000000                       mov ebx, 1; specify stdout for write
+   116 00000048 B9[00000000]                     mov ecx, Buff; pass buffer address
+   117 0000004D 89F2                             mov edx, esi; move num chars in buf to edx. This is why we saved the return val of sys_read
+   118 0000004F CD80                             int 80h; make sys_write call
+   119 00000051 83F800                           cmp eax,0
+   120 00000054 7202                             jb WriteError; move to error block if exit code is neg
+   121 00000056 EBA9                             jmp Read;move to start of prog to continue reading as long as theres input
+   122                                  
+   123 00000058 B804000000                WriteError: mov eax, 4;sys_write service num
+   124 0000005D BB01000000                            mov ebx, 1;specify stdout
+   125 00000062 B9[23000000]                          mov ecx, fwerr; pass error msg pointer
+   126 00000067 BA46000000                            mov edx, fwerrlen; pass len of msg
+   127 0000006C CD80                                  int 80h; make sys_call
+   128 0000006E EB24                                  jmp ExitErr
+   129                                  
+   130 00000070 B804000000                ReadError: mov eax, 4;sys_write service num
+   131 00000075 BB01000000                            mov ebx, 1;specify stdout
+   132 0000007A B9[00000000]                          mov ecx, frerr; pass error msg pointer
+   133 0000007F BA23000000                            mov edx, frerrlen; pass len of msg
+   134 00000084 CD80                                  int 80h; make sys_call
+   135 00000086 EB0C                                  jmp ExitErr
+   136                                  
+   137                                    ;were done dip
+   138 00000088 B801000000                Exit: mov eax, 1; specify sys_exit service number
+   139 0000008D BB00000000                      mov ebx, 0; exit code 0
+   140 00000092 CD80                            int 80h; make exit call
+   141                                  
+   142                                  
+   143 00000094 B801000000                ExitErr: mov eax, 1; specify sys_exit service number
+   144 00000099 BBFFFFFFFF                         mov ebx, -1; exit code -1 since error occured
+   145 0000009E CD80                               int 80h; make exit call
