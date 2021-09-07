@@ -1,0 +1,99 @@
+     1                                  ;Exe Name: inttostring.asm
+     2                                  ;Description: converts a hard coded integer to a string and prints it to stdout
+     3                                  
+     4                                  
+     5                                  
+     6                                  SECTION .data
+     7 00000000 1F38                      n dw 14367; number to convert
+     8 00000002 00                        digcount db 0;number of digits we've converted so far
+     9                                  SECTION .bss
+    10                                    bufflen equ 10; wont store more than ten chars
+    11 00000000 <res Ah>                  buff: resb bufflen; text buffer
+    12                                  
+    13                                  global _start;linker entry point
+    14                                  
+    15                                  
+    16                                  SECTION .text
+    17                                  
+    18                                  _start: 
+    19                                  
+    20 00000000 90                        nop ;for the debugs
+    21                                  
+    22                                    ;lets see how div works
+    23                                    ; mov eax, [n]; move num to convert to eax
+    24                                    ; mov ecx,10; move divisor to ecx
+    25                                    ; div ecx; divide val in eax by 10
+    26                                  
+    27                                    ;lets work through printing it backwards first
+    28                                    ;when eax is divided by 10 eax becomes 133
+    29                                    ;and the remainder is stored in edx so edx becomes 7
+    30                                    ;store edx+48 at [buff+digcount]
+    31                                    ;inc digcount
+    32                                    ;then setup sys_write
+    33                                    ;write digcount chars to stdout
+    34                                    ;this should give us the digit backwards
+    35                                  
+    36                                    ;setup regs for conversion
+    37 00000001 BE00000000                mov esi, 0; esi will count chars we've converted so far
+    38 00000006 A1[00000000]              mov eax, [n]; move num to convert to eax
+    39 0000000B B90A000000                mov ecx,10; move divisor to ecx
+    40                                  
+    41                                    Convert:
+    42 00000010 F7F1                      div ecx; divide val in eax by 10
+    43 00000012 83C230                    add edx, 48; convert to ascii char
+    44 00000015 8996[00000000]            mov [buff + esi], edx;
+    45 0000001B 46                        inc esi;
+    46 0000001C 31D2                      xor edx,edx;zero edx
+    47 0000001E 83F800                    cmp eax,0; we're done converting once val in edx is 0
+    48 00000021 75ED                      jne Convert; 
+    49                                  
+    50                                    ;setup regs to reverse the string
+    51 00000023 B9[00000000]              mov ecx, buff; move starting addr of buff to ecx
+    52 00000028 8D96[FFFFFFFF]            lea edx, [buff-1+esi]; mov location of end of buff to edx
+    53                                  
+    54                                  
+    55                                    ;left pointer = ecx
+    56                                    ;right pointer = edx 
+    57                                    ;temp = ebx
+    58                                    ;ebx=[edx]
+    59                                    ;[edx]=[ecx]
+    60                                    ;[ecx]=ebx
+    61                                    ;inc ecx
+    62                                    ;dec edx
+    63                                    ;xor ebx, ebx
+    64                                    ;cmp ecx, edx
+    65                                    ;jle Reverse
+    66                                  
+    67                                    Reverse:
+    68                                    ;swap left and right
+    69 0000002E 8A19                      mov bl, byte [ecx];store left char
+    70 00000030 8A3A                      mov bh, byte [edx];store right char
+    71                                  
+    72 00000032 881A                      mov byte[edx], bl; move left char to right pointer location
+    73 00000034 8839                      mov byte[ecx], bh; move right char to left pointer location
+    74                                  
+    75 00000036 41                        inc ecx; inc left pointer
+    76 00000037 4A                        dec edx; dec right pointer
+    77                                  
+    78 00000038 31DB                      xor ebx,ebx; zero ebx
+    79                                  
+    80 0000003A 39D1                      cmp ecx, edx; compare left and right pointers
+    81 0000003C 7EF0                      jle Reverse
+    82                                  
+    83                                    Write:
+    84 0000003E B804000000                mov eax, 4; specify sys_write
+    85 00000043 BB01000000                mov ebx, 1; specify stdout
+    86 00000048 B9[00000000]              mov ecx, buff; buff pointer
+    87 0000004D 89F2                      mov edx, esi; specify num of bytes to write
+    88 0000004F CD80                      int 80h; make sys_call
+    89 00000051 EB00                      jmp Exit; dip
+    90                                  
+    91                                    Exit:
+    92 00000053 B801000000                mov eax, 1;specify sys_exit
+    93 00000058 BB00000000                mov ebx, 0; return code 0
+    94 0000005D CD80                      int 80h; make call
+    95                                    
+    96                                  
+    97                                  
+    98 0000005F 90                        nop; so we dont run off the end
+    99                                  
