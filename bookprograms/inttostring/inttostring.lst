@@ -4,11 +4,11 @@
      4                                  
      5                                  
      6                                  SECTION .data
-     7 00000000 1F38                      n dw 14367; number to convert
+     7 00000000 2C00                      n dw 44; number to convert
      8 00000002 00                        digcount db 0;number of digits we've converted so far
      9                                  SECTION .bss
-    10                                    bufflen equ 10; wont store more than ten chars
-    11 00000000 <res Ah>                  buff: resb bufflen; text buffer
+    10                                    intstrbufflen equ 10; wont store more than ten chars
+    11 00000000 <res Ah>                  intstrbuff: resb intstrbufflen; text buffer
     12                                  
     13                                  global _start;linker entry point
     14                                  
@@ -41,15 +41,15 @@
     41                                    Convert:
     42 00000010 F7F1                      div ecx; divide val in eax by 10
     43 00000012 83C230                    add edx, 48; convert to ascii char
-    44 00000015 8996[00000000]            mov [buff + esi], edx;
+    44 00000015 8996[00000000]            mov [intstrbuff + esi], edx;
     45 0000001B 46                        inc esi;
     46 0000001C 31D2                      xor edx,edx;zero edx
     47 0000001E 83F800                    cmp eax,0; we're done converting once val in edx is 0
     48 00000021 75ED                      jne Convert; 
     49                                  
     50                                    ;setup regs to reverse the string
-    51 00000023 B9[00000000]              mov ecx, buff; move starting addr of buff to ecx
-    52 00000028 8D96[FFFFFFFF]            lea edx, [buff-1+esi]; mov location of end of buff to edx
+    51 00000023 B9[00000000]              mov ecx, intstrbuff; move starting addr of intstrbuff to ecx
+    52 00000028 8D96[FFFFFFFF]            lea edx, [intstrbuff-1+esi]; mov location of end of intstrbuff to edx
     53                                  
     54                                  
     55                                    ;left pointer = ecx
@@ -83,7 +83,7 @@
     83                                    Write:
     84 0000003E B804000000                mov eax, 4; specify sys_write
     85 00000043 BB01000000                mov ebx, 1; specify stdout
-    86 00000048 B9[00000000]              mov ecx, buff; buff pointer
+    86 00000048 B9[00000000]              mov ecx, intstrbuff; intstrbuff pointer
     87 0000004D 89F2                      mov edx, esi; specify num of bytes to write
     88 0000004F CD80                      int 80h; make sys_call
     89 00000051 EB00                      jmp Exit; dip
@@ -93,7 +93,5 @@
     93 00000058 BB00000000                mov ebx, 0; return code 0
     94 0000005D CD80                      int 80h; make call
     95                                    
-    96                                  
+    96 0000005F 90                        nop; so we dont run off the end
     97                                  
-    98 0000005F 90                        nop; so we dont run off the end
-    99                                  

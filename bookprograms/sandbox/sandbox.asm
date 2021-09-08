@@ -1,5 +1,10 @@
 section .data ;this is a comment F 
 hi: db "Hello World!"
+sums: dd "15,12,6,0,21,14,4,0,0,10"
+sumslen equ $-sums; length
+a: db "a"
+b: db "b"
+abc: db "abc"
 
 section .text ;text go here?
 
@@ -77,10 +82,14 @@ _start: ;this seems to be basically the main function
 
 
   ;******8****** div demo
-  mov ebx, 010h
-  mov eax, 020h
-  div ebx  ;look in eax
+  ; mov ebx, 010h
+  ; mov eax, 020h
+  ; div ebx  ;look in eax
 
 
+  mov eax, 4; sys_write
+  mov ebx, 1; stdout
+  mov ecx, sums; sums addr
+  mov edx, sumslen;
 
   section .bss ;this sections stores uninited data

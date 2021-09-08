@@ -1,0 +1,238 @@
+     1                                  ;Exe name: hexdump.asm
+     2                                  ;Description: converts a binary value to a string. Now with more procedures!
+     3                                  
+     4                                  SECTION .bss; uninited data
+     5                                  
+     6                                        BUFFLEN equ 10; file buffer size
+     7 00000000 <res Ah>                      Buff: resb BUFFLEN; buffer 10 bytes long
+     8                                  
+     9                                  SECTION .data; initialized data
+    10                                  
+    11 00000000 203030203030203030-           DumpLin: db " 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 "; dont forget to append a \n if we use this on its own
+    11 00000009 203030203030203030-
+    11 00000012 203030203030203030-
+    11 0000001B 203030203030203030-
+    11 00000024 203030203030203030-
+    11 0000002D 20303020303020     
+    12                                        DUMPLEN equ $-DumpLin; sub beginning from end to get length
+    13 00000034 7C2E2E2E2E2E2E2E2E-           ASCLin: db "|..................|", 10
+    13 0000003D 2E2E2E2E2E2E2E2E2E-
+    13 00000046 2E7C0A             
+    14                                        ASCLEN equ $-ASCLin; length of just asci line
+    15                                        FULLEN equ $-DumpLin; because we are just past Dumplin and ASCLin subtracting the start of 
+    16                                                            ; Dumplin here allows us to get the full length of the contigious Dumplin and ascillen
+    17                                  
+    18                                        ;this is the simple hex digits lookup table we can use go from a hex digit to its corresponding ascii char
+    19 00000049 303132333435363738-           HexDigits: db "0123456789ABCDEF";guessing this will be a lookup table
+    19 00000052 39414243444546     
+    20                                  
+    21                                    ;this is new and large. This ASCII translation table takes a printable char to a printable char
+    22                                    ;anything else is transformed to a "." character
+    23                                    DotXlat:
+    24 00000059 2E2E2E2E2E2E2E2E2E-         db 2Eh,2Eh,2Eh,2Eh,2Eh,2Eh,2Eh,2Eh,2Eh,2Eh,2Eh,2Eh,2Eh,2Eh,2Eh,2Eh
+    24 00000062 2E2E2E2E2E2E2E     
+    25 00000069 2E2E2E2E2E2E2E2E2E-         db 2Eh,2Eh,2Eh,2Eh,2Eh,2Eh,2Eh,2Eh,2Eh,2Eh,2Eh,2Eh,2Eh,2Eh,2Eh,2Eh
+    25 00000072 2E2E2E2E2E2E2E     
+    26 00000079 202122232425262728-         db 20h,21h,22h,23h,24h,25h,26h,27h,28h,29h,2Ah,2Bh,2Ch,2Dh,2Eh,2Fh
+    26 00000082 292A2B2C2D2E2F     
+    27 00000089 303132333435363738-         db 30h,31h,32h,33h,34h,35h,36h,37h,38h,39h,3Ah,3Bh,3Ch,3Dh,3Eh,3Fh
+    27 00000092 393A3B3C3D3E3F     
+    28 00000099 404142434445464748-         db 40h,41h,42h,43h,44h,45h,46h,47h,48h,49h,4Ah,4Bh,4Ch,4Dh,4Eh,4Fh
+    28 000000A2 494A4B4C4D4E4F     
+    29 000000A9 505152535455565758-         db 50h,51h,52h,53h,54h,55h,56h,57h,58h,59h,5Ah,5Bh,5Ch,5Dh,5Eh,5Fh
+    29 000000B2 595A5B5C5D5E5F     
+    30 000000B9 606162636465666768-         db 60h,61h,62h,63h,64h,65h,66h,67h,68h,69h,6Ah,6Bh,6Ch,6Dh,6Eh,6Fh
+    30 000000C2 696A6B6C6D6E6F     
+    31 000000C9 707172737475767778-         db 70h,71h,72h,73h,74h,75h,76h,77h,78h,79h,7Ah,7Bh,7Ch,7Dh,7Eh,2Eh
+    31 000000D2 797A7B7C7D7E2E     
+    32 000000D9 2E2E2E2E2E2E2E2E2E-         db 2Eh,2Eh,2Eh,2Eh,2Eh,2Eh,2Eh,2Eh,2Eh,2Eh,2Eh,2Eh,2Eh,2Eh,2Eh,2Eh
+    32 000000E2 2E2E2E2E2E2E2E     
+    33 000000E9 2E2E2E2E2E2E2E2E2E-         db 2Eh,2Eh,2Eh,2Eh,2Eh,2Eh,2Eh,2Eh,2Eh,2Eh,2Eh,2Eh,2Eh,2Eh,2Eh,2Eh
+    33 000000F2 2E2E2E2E2E2E2E     
+    34 000000F9 2E2E2E2E2E2E2E2E2E-         db 2Eh,2Eh,2Eh,2Eh,2Eh,2Eh,2Eh,2Eh,2Eh,2Eh,2Eh,2Eh,2Eh,2Eh,2Eh,2Eh
+    34 00000102 2E2E2E2E2E2E2E     
+    35 00000109 2E2E2E2E2E2E2E2E2E-         db 2Eh,2Eh,2Eh,2Eh,2Eh,2Eh,2Eh,2Eh,2Eh,2Eh,2Eh,2Eh,2Eh,2Eh,2Eh,2Eh
+    35 00000112 2E2E2E2E2E2E2E     
+    36 00000119 2E2E2E2E2E2E2E2E2E-         db 2Eh,2Eh,2Eh,2Eh,2Eh,2Eh,2Eh,2Eh,2Eh,2Eh,2Eh,2Eh,2Eh,2Eh,2Eh,2Eh
+    36 00000122 2E2E2E2E2E2E2E     
+    37 00000129 2E2E2E2E2E2E2E2E2E-         db 2Eh,2Eh,2Eh,2Eh,2Eh,2Eh,2Eh,2Eh,2Eh,2Eh,2Eh,2Eh,2Eh,2Eh,2Eh,2Eh
+    37 00000132 2E2E2E2E2E2E2E     
+    38 00000139 2E2E2E2E2E2E2E2E2E-         db 2Eh,2Eh,2Eh,2Eh,2Eh,2Eh,2Eh,2Eh,2Eh,2Eh,2Eh,2Eh,2Eh,2Eh,2Eh,2Eh
+    38 00000142 2E2E2E2E2E2E2E     
+    39 00000149 2E2E2E2E2E2E2E2E2E-         db 2Eh,2Eh,2Eh,2Eh,2Eh,2Eh,2Eh,2Eh,2Eh,2Eh,2Eh,2Eh,2Eh,2Eh,2Eh,2Eh
+    39 00000152 2E2E2E2E2E2E2E     
+    40                                  
+    41                                  SECTION .text ;code section
+    42                                  
+    43                                  ;-----------------------------------------------------------------------------
+    44                                  ; ClearLine: clear a hex dump line string to 16 0 values
+    45                                  ; updated: uhhh at some point
+    46                                  ; IN: nothing (no args here)
+    47                                  ; RETURNS: nothing 
+    48                                  ; MODIFIES: nothing (it affects no registers)
+    49                                  ; CALL: DumpChar (another procedure)
+    50                                  ; DESCRIPTION: calls DumpChar 16 times to zero Dump line string
+    51                                  
+    52                                  ClearLine:
+    53 00000000 60                        Pushad ;save callers GP registers to the stack
+    54                                  
+    55 00000001 BA0F000000                mov edx, 15; poke count (were going to poke 16 times)
+    56 00000006 B800000000              .poke mov eax, 0 ; poke a '0'
+    57 0000000B E807000000                call DumpChar ;insert '0' into hex dump string
+    58 00000010 83EA01                    sub edx, 1 ;recall that dec does not affect the carry flag
+    59 00000013 73F1                      jae .poke ; jump if above or equal (if edx >= 0)
+    60 00000015 61                        popad ; restore all registers before call
+    61 00000016 C3                        ret ;go home :(
+    62                                  
+    63                                  
+    64                                  ;-----------------------------------------------------------------------------
+    65                                  ; DumpChar: "poke" a value into the hexdump string (huh?)
+    66                                  ; Update: probably never again after this
+    67                                  ; IN: Pass 8 val (ASCII char val) to be poked in register EAX
+    68                                  ;     Pass the values position in line (0-15) in EDX
+    69                                  ; RETURNS: Nothing
+    70                                  ; MODIFIES: EAX, ASCLin, DumpLin (so I guess if a procedure modifies somthing it means it affects its execution as well)
+    71                                  ; CALLS: were a strong willed independent procedure who dont need no child calls
+    72                                  ; DESCRIPTION: put the value in EAX into the positon pointed to by EDX in ASCLin
+    73                                  
+    74                                  
+    75                                  DumpChar:
+    76 00000017 53                        push ebx; save callers ebx
+    77 00000018 57                        push edi; save callers edi
+    78                                  
+    79                                    ;input char to ASCII portion of DumpLin
+    80 00000019 8A98[59000000]            mov bl, byte [DotXlat+eax] ;translate char with table
+    81 0000001F 889A[35000000]            mov byte [ASCLin+edx+1], bl;write to ascii portion
+    82                                  
+    83                                    ;insert hex equivalent in hex portion of DumpLIn
+    84 00000025 89C3                      mov ebx, eax ;save another copy of the input char
+    85 00000027 8D3C52                    lea edi, [edx*2+edx]; calc offset into line string edx*3
+    86                                  
+    87                                    ;from pretty much same conversion process as hexdump1
+    88                                  
+    89                                    ;perform lookup for low nybble and insert in hex string
+    90 0000002A 83E00F                    and eax,0000000fh; mask out everything except low byte
+    91 0000002D 8A80[49000000]            mov al, byte [HexDigits+eax]; perform look and store result back in eax
+    92 00000033 8887[02000000]            mov byte [DumpLin+edi+2], al; insert low nybble in string
+    93                                  
+    94                                    ;perform lookup for hight nybble and insert in hex string
+    95 00000039 81E3F0000000              and ebx, 000000f0h; mask out all but high byte
+    96 0000003F C1EB04                    shr ebx, 4; discard low byte
+    97 00000042 8A9B[49000000]            mov bl, byte [HexDigits+ebx]; perform lookup for second char
+    98 00000048 889F[01000000]            mov byte [DumpLin+edi+1], bl; insert high nybble in string
+    99                                  
+   100                                    ;done lets dip
+   101 0000004E 5F                        pop edi ;restore edi
+   102 0000004F 5B                        pop ebx ;restore ebx
+   103 00000050 C3                        ret ;go home procedure your drunk
+   104                                  
+   105                                  ;-----------------------------------------------------------------------------
+   106                                  ; PrintLine: display line to stdout
+   107                                  ; Update: probably never again after this
+   108                                  ; IN: Nothing
+   109                                  ; RETURNS: Nothing
+   110                                  ; MODIFIES: Nothing 
+   111                                  ; CALLS: sys_write
+   112                                  ; DESCRIPTION: write the hex dump line string DumpLin to stdout
+   113                                  
+   114                                  PrintLine:
+   115 00000051 60                        pushad ;save all caller's GP registers
+   116 00000052 B804000000                mov eax, 4; sys_write code
+   117 00000057 BB01000000                mov ebx, 1; specify stdout
+   118 0000005C B9[00000000]              mov ecx, DumpLin ;pass addr of line
+   119 00000061 BA49000000                mov edx, FULLEN ;pass size of full line string
+   120 00000066 CD80                      int 80h ;make call
+   121 00000068 61                        popad ;restore all registers precall
+   122 00000069 C3                        ret ;return control to caller
+   123                                  
+   124                                  
+   125                                  ;-----------------------------------------------------------------------------
+   126                                  ; LoadBuff: fill buff with data from stdin via sys_read call
+   127                                  ; Update: probably never again after this
+   128                                  ; IN: Nothing
+   129                                  ; RETURNS: Number of bytes read in 
+   130                                  ; MODIFIES: ECX, EBP, Buff 
+   131                                  ; CALLS: sys_read
+   132                                  ; DESCRIPTION: load a buffer lengths worth of bytes into out buffer via sys_read kernal call
+   133                                  
+   134                                  LoadBuff: 
+   135                                    ;save callers register states
+   136 0000006A 52                        push edx
+   137 0000006B 53                        push ebx
+   138 0000006C 50                        push eax
+   139                                  
+   140 0000006D B803000000                mov eax, 3;specify sys_read
+   141 00000072 BB00000000                mov ebx, 0;file descriptor 0 (stdin)
+   142 00000077 B9[00000000]              mov ecx, Buff;pass offset of buffer to read to
+   143 0000007C BA0A000000                mov edx, BUFFLEN; read BUFFLEN bytes
+   144 00000081 CD80                      int 80h ;make call
+   145 00000083 89C5                      mov ebp, eax; save num of bytes read
+   146 00000085 31C9                      xor ecx, ecx; zero ecx
+   147                                    ;restore registers
+   148 00000087 5A                        pop edx
+   149 00000088 5B                        pop ebx
+   150 00000089 58                        pop eax
+   151                                  
+   152 0000008A C3                        ret; return control to caller
+   153                                  
+   154                                  
+   155                                  
+   156                                  
+   157                                  
+   158                                  
+   159                                  
+   160                                  
+   161                                  
+   162                                  global _start ;linker entry point
+   163                                  
+   164                                  ;--------------------------------------
+   165                                  ;     Main Prog Start
+   166                                  ;--------------------------------------
+   167                                  
+   168                                  _start:
+   169                                  
+   170 0000008B 90                        nop; for the debugs
+   171                                  
+   172                                    ;initialize some stuff
+   173                                  
+   174 0000008C 31F6                      xor esi, esi; zero total byte counter
+   175 0000008E E8D7FFFFFF                call LoadBuff; read first buffer of data from stdin (wow thats so much more succint)
+   176 00000093 83FD00                    cmp ebp, 0; check for EOF
+   177 00000096 763B                      jbe Exit; if reached eof or error dip
+   178                                  
+   179                                    ;move through buffer and convert bin values to hex digits
+   180                                    Scan:
+   181 00000098 31C0                      xor eax, eax; zero eax
+   182 0000009A 8A81[00000000]            mov al, byte[Buff+ecx]; get a byte from the buff into al
+   183 000000A0 89F2                      mov edx, esi; copy char counter to edx
+   184 000000A2 83E20F                    and edx, 0000000fh; mask out all but last 4 bits char counter
+   185 000000A5 E86DFFFFFF                call DumpChar ;call char poke
+   186                                  
+   187                                  
+   188                                    ;inc buf pointer and check if were done
+   189 000000AA 46                        inc esi; inc chars processed count
+   190 000000AB 41                        inc ecx; increment buffer pointer
+   191 000000AC 39E9                      cmp ecx, ebp; compare to num of chars in buff
+   192 000000AE 720A                      jb .modTest ;if we've processed all chars in buff
+   193 000000B0 E8B5FFFFFF                call LoadBuff; fill buffer
+   194 000000B5 83FD00                    cmp ebp, 0; check for EOF
+   195 000000B8 7614                      jbe Done; if we got EOF were done
+   196                                    
+   197                                    ;check if we are at end of block 16 and need to display a line to reuse our buff
+   198                                    .modTest:
+   199 000000BA F7C60F000000              test esi, 0000000fh; test low byte for zero
+   200 000000C0 75D6                      jnz Scan; if counter not mod 16 loop back
+   201 000000C2 E88AFFFFFF                call PrintLine; else print line
+   202 000000C7 E834FFFFFF                call ClearLine; clear line for reuse
+   203 000000CC EBCA                      jmp Scan; continue scanning buff
+   204                                  
+   205                                    Done:
+   206 000000CE E87EFFFFFF                  call PrintLine ;print the leftovers
+   207                                  
+   208                                    Exit:
+   209 000000D3 B801000000                  mov eax, 1; specify sys_exit
+   210 000000D8 BB00000000                  mov ebx, 0; return 0
+   211 000000DD CD80                        int 80h; make call
+   212                                  
+   213                                  
+   214                                  ;functions pushing and poping parent vars to the stack makes a lot more sense now and I'm guessing ret just moves execution back to the line it was called from.

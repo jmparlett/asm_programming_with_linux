@@ -11,7 +11,7 @@ SECTION .data; initialized data
       HexStr: db " 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00", 10
       HEXLEN equ $-HexStr; sub beginning from end to get length
 
-      Digits: db "0123456789ABCDEF";guessing this will be a loopup table
+      Digits: db "0123456789ABCDEF";guessing this will be a lookup table
 
 SECTION .text; code and stuff
 
@@ -60,9 +60,9 @@ Scan:; process buffer
 
 
   ;look up high nybble char and insert it into the string
-  shr bl, 4 ; shift high 4 to low 4
-  mov bl, byte [Digits+ebx] ; look up char equivalent of nybble
-  mov byte [HexStr + edx + 1], bl ; WRite MSB char digit to line string
+  shr bl, 4; shift high 4 to low 4
+  mov bl, byte [Digits+ebx]; look up char equivalent of nybble
+  mov byte [HexStr + edx + 1], bl; WRite MSB char digit to line string
 
   ;bump the buffer pointer to the next char and see if were done
   inc ecx; inc line pointer

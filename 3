@@ -1,0 +1,76 @@
+;name determinant.asm
+;description: calculates a 2x2 determinant given comma seperated arguments in a file.
+; the arguments must all be <= 7 since calculations will be done using a lookup table.
+
+
+
+;process
+
+;Read
+;read in arguments to buffer in format a,b,c,d where a,b,c,d <= 7
+;set up registers for sys_read
+
+;Calculate
+;calculate a*d - (c*b)
+;lookup row a/c column d/b
+;store lookup results in register a, b
+;calc (a-b)
+
+;Write
+;write result of calculation to stdout
+;set up registers for sys_write
+
+;Exit
+;set up registers for sys_exit
+;make sys_exit call
+
+SECTION .data
+  SevenXSevenMultTable:
+  db 0, 0, 0, 0, 0, 0, 0, 0
+  db 0, 1, 2, 3, 4, 5, 6, 7
+  db 0, 2, 4, 6, 8, 10, 12, 14
+  db 0, 3, 6, 9, 12, 15, 18, 21
+  db 0, 4, 8, 12, 16, 20, 24, 28
+  db 0, 5, 10, 15, 20, 25, 30, 35
+  db 0, 6, 12, 18, 24, 30, 36, 42 
+  db 0, 7, 14, 21, 28, 35, 42, 49
+
+SECTION .bss
+  Bufflen equ 8; 8 bytes to hold a,b,c,d
+  Buff: resb Bufflen; create buffer of length 8
+
+SECTION .text
+
+global _start ;linker entry point
+
+
+_start: 
+  
+  nop; for the debugs
+
+  Read:
+    mov eax,3; specify sys_read
+    mov ebx,0; stdin
+    mov edx,Bufflen; read buffers size of chars from stdin
+    mov ecx,Buff; store add of buff to ecx
+    int 80h; make sys_call
+
+    cmp eax,0; check for EOF
+    je Exit; if sys_read indicates EOF jump to exit
+
+   
+
+
+
+
+
+
+
+
+
+
+
+  Exit: ;were done dip
+  mov eax, 1; specify sys_exit
+  mov ebx, 0; specify zero return code
+  int 80h; make call

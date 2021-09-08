@@ -4,11 +4,11 @@
 
 
 SECTION .data
-  n dw 14367; number to convert
+  n dw 44; number to convert
   digcount db 0;number of digits we've converted so far
 SECTION .bss
-  bufflen equ 10; wont store more than ten chars
-  buff: resb bufflen; text buffer
+  intstrbufflen equ 10; wont store more than ten chars
+  intstrbuff: resb intstrbufflen; text buffer
 
 global _start;linker entry point
 
@@ -41,15 +41,15 @@ _start:
   Convert:
   div ecx; divide val in eax by 10
   add edx, 48; convert to ascii char
-  mov [buff + esi], edx;
+  mov [intstrbuff + esi], edx;
   inc esi;
   xor edx,edx;zero edx
   cmp eax,0; we're done converting once val in edx is 0
   jne Convert; 
 
   ;setup regs to reverse the string
-  mov ecx, buff; move starting addr of buff to ecx
-  lea edx, [buff-1+esi]; mov location of end of buff to edx
+  mov ecx, intstrbuff; move starting addr of intstrbuff to ecx
+  lea edx, [intstrbuff-1+esi]; mov location of end of intstrbuff to edx
 
 
   ;left pointer = ecx
@@ -83,7 +83,7 @@ _start:
   Write:
   mov eax, 4; specify sys_write
   mov ebx, 1; specify stdout
-  mov ecx, buff; buff pointer
+  mov ecx, intstrbuff; intstrbuff pointer
   mov edx, esi; specify num of bytes to write
   int 80h; make sys_call
   jmp Exit; dip
