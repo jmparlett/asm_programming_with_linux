@@ -1,6 +1,5 @@
 ;name determinant.asm
 ;description: calculates a 2x2 determinant given comma seperated arguments in a file.
-; the arguments must all be <= 7 since calculations will be done using a lookup table.
 
 
 
