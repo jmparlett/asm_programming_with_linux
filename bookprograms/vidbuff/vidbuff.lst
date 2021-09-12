@@ -1,0 +1,278 @@
+     1                                  ;Name: vidbuff.asm
+     2                                  ;Description: demonstrate strings instructions by faking full screen memory-mapped text I/O.
+     3                                  
+     4                                  
+     5                                  SECTION .data; yall know what.. it... is... variable space... ha ha
+     6                                    EOL equ 10; ascii newline char ('\n')
+     7                                    FILLCHR equ 32; ascii space char (not printable)
+     8                                    HBARCHR equ 45; ascii dash char
+     9                                    STRTROW equ 2; row to start drawing at
+    10                                  
+    11                                    ;table of byte length numbers 
+    12 00000000 0947113437121D2412-       Dataset db 9, 71, 17, 52, 55, 18, 29, 36, 18, 68, 77, 63, 58, 44, 0
+    12 00000009 444D3F3A2C00       
+    13                                  
+    14 0000000F 57686F206B6E6F7773-       Message db "Who knows who cares"
+    14 00000018 2077686F2063617265-
+    14 00000021 73                 
+    15                                    MSGLEN equ $-Message
+    16                                  
+    17                                    ;escapay seq to take cursor home 1,1
+    18 00000022 1B5B326A1B5B30313B-       ClrHome db 1bh,"[2j",1bh,"[01;01H"; were not using the normal 1b[H because home here is 1,1 not 0,0
+    18 0000002B 303148             
+    19                                    CLRLEN equ $-ClrHome ;length of clear home string
+    20                                  
+    21                                  SECTION .bss; uninited data section
+    22                                    COLS equ 81; line length + 1 char for EOL (line len 80 just cause. We really have no way of knowing screen size without doing some extra stuff)
+    23                                    ROWS equ 25; number of lines in display (also arbitrary)
+    24 00000000 <res 7E9h>                VidBuff resb ROWS*COLS; dynamic since its calculated based on rows and cols. This effectively allocates a 2d grid in memory the size of our screen.
+    25                                  
+    26                                  SECTION .text; glorious code section
+    27                                  
+    28                                  global _start ;linker entry point 
+    29                                  
+    30                                  ;macro to clear screen and send cursor home (1,1) in this case.
+    31                                  %macro ClearTerminal 0
+    32                                    pushad ;save all registers
+    33                                    mov eax, 4; sys_write
+    34                                    mov ebx, 1; stdout
+    35                                    mov ecx, ClrHome; ecx=pointer to clear home
+    36                                    mov edx, CLRLEN; len of escape sequence to write
+    37                                    int 80h; make call
+    38                                    popad; restore registers
+    39                                  %endmacro
+    40                                  
+    41                                  
+    42                                  ;------------------------------------------------------------------
+    43                                  ;Show: write text buff to stdout
+    44                                  ; RETURN: Nothing
+    45                                  ; Modifies: Nothing
+    46                                  ; Calls: sys_write
+    47                                  ; Description: write text buffer to standard out by make a linux sys_write call
+    48                                  ;              bytes to write = rows*cols
+    49                                  
+    50 00000000 60                      Show: pushad; save registers
+    51 00000001 B804000000                    mov eax, 4; sys_write
+    52 00000006 BB01000000                    mov ebx, 1; stdout
+    53 0000000B B9[00000000]                  mov ecx, VidBuff; ecx = VidBuff pointer
+    54 00000010 BAE9070000                    mov edx, COLS*ROWS; size of 2d buffer
+    55 00000015 CD80                          int 80h; make call
+    56 00000017 61                            popad; restore registers
+    57 00000018 C3                            ret; return control to caller
+    58                                  
+    59                                  
+    60                                  ;------------------------------------------------------------------
+    61                                  ;ClrVid: Clear text buff by writing whitespace (space chars) and replacing newlines
+    62                                  ;IN: Nothing
+    63                                  ;Returns: Nothing
+    64                                  ;Modifies: VidBuff, DF
+    65                                  ;Calls: Nothing
+    66                                  
+    67 00000019 50                      ClrVid: push eax ;save register of caller
+    68 0000001A 51                              push ecx
+    69 0000001B 57                              push edi
+    70                                  
+    71 0000001C FC                              cld ;clear df. Were counting up memory
+    72 0000001D B020                            mov al, FILLCHR; put fill char in al
+    73 0000001F BF[00000000]                    mov edi, VidBuff; edi = vidbuff pointer
+    74 00000024 B9E9070000                      mov ecx, COLS*ROWS; vidbuff size
+    75 00000029 F3AA                            rep stosb; blast chars into buffer
+    76                                  
+    77                                          ;buffer cleared. Reinsert EOL
+    78 0000002B BF[00000000]                    mov edi, VidBuff; edi = vidbuff pointer again
+    79 00000030 4F                              dec edi; start EOL position count at vidbuff char 0 (this means out offset will be correct when we add COLS to pointer)
+    80 00000031 B919000000                      mov ecx, ROWS; we will repeat process for each row
+    81                                  
+    82 00000036 83C751                    PtEOL: add edi, COLS; add col count (means we are at the last position of the currect row
+    83 00000039 C6070A                           mov byte[edi], EOL; mov eol char to end of row
+    84 0000003C E2F8                             loop PtEOL; loob back if more lines left
+    85                                           
+    86                                           ;were done restore registers and return
+    87 0000003E 5F                               pop edi
+    88 0000003F 59                               pop ecx
+    89 00000040 58                               pop eax
+    90 00000041 C3                        ret; return control to caller
+    91                                  
+    92                                  
+    93                                  ;------------------------------------------------------------------
+    94                                  ; WrtLn: writes a string of text to buffer
+    95                                  ; IN: address of string passed in ESI
+    96                                  ;     X position passed in EBX (row #)
+    97                                  ;     Y position (column #) passed in EAX
+    98                                  ;     The length of the string in chars is passed in ECX
+    99                                  ; RETURNS: Nothing
+   100                                  ; MODIFIES: VidBuff, EDI, DF
+   101                                  ; CALLS: Nothing
+   102                                  ; Description: Uses REP MOVSB to copy a string from the address of ESI to an X,Y position in VidBuff
+   103                                  
+   104 00000042 50                      WrtLn: push eax; save registers
+   105 00000043 53                             push ebx
+   106 00000044 51                             push ecx
+   107 00000045 57                             push edi
+   108                                  
+   109 00000046 FC                             cld; clear DF
+   110 00000047 BF[00000000]                   mov edi, VidBuff; edi=vidbuff pointer
+   111 0000004C 48                             dec eax; move down 1 in Y for addr calculation
+   112 0000004D 4B                             dec ebx; move down 1 in X for addr calculation
+   113 0000004E B451                           mov ah, COLS; move screen width to ah
+   114 00000050 F6E4                           mul ah; multiply ah*al result in ax
+   115 00000052 01C7                           add edi, eax; Add Y offset into vidbuff to EDI
+   116 00000054 01DF                           add edi, ebx; Add X offset
+   117 00000056 F3A4                           rep movsb; blast string to buffer
+   118                                  
+   119                                         ;restore registers
+   120 00000058 5F                             pop edi
+   121 00000059 59                             pop ecx
+   122 0000005A 5B                             pop ebx
+   123 0000005B 58                             pop eax
+   124 0000005C C3                             ret; return control to caller
+   125                                  
+   126                                  
+   127                                  ;------------------------------------------------------------------
+   128                                  ;WrtHB: Generates a horizontal line bar at X,Y in text buffer
+   129                                  ;IN: X position (row #) in EBX
+   130                                  ;    Y position (col #) in EAX
+   131                                  ;    length of bar in chars in ECX
+   132                                  ;RETURN: Nothing
+   133                                  ;MODIFIES: VidBuff, DF
+   134                                  ;CALLS: Nothing
+   135                                  ;Description: Writes a horizontal bar to the video buffer at the X,Y coords given. bar is made of HBARCHR
+   136                                  
+   137                                  WrtHB: ;save registers
+   138 0000005D 50                             push eax
+   139 0000005E 53                             push ebx
+   140 0000005F 51                             push ecx
+   141 00000060 57                             push edi
+   142                                  
+   143 00000061 FC                             cld; clear DF for up mem write
+   144                                  
+   145 00000062 BF[00000000]                   mov edi, VidBuff; edi = VidBuff pointer
+   146                                  
+   147                                         ;move down 1 in X,Y for addr calculation
+   148 00000067 48                             dec eax
+   149 00000068 4B                             dec ebx
+   150                                  
+   151 00000069 B451                           mov ah,COLS; move screen width to ah
+   152 0000006B F6E4                           mul ah; mul ah*al store in ax
+   153 0000006D 01C7                           add edi, eax; add Y offset to pointer
+   154 0000006F 01DF                           add edi, ebx; add X offset to pointer
+   155 00000071 B02D                           mov al, HBARCHR; put char to use for bar in al
+   156 00000073 F3AA                           rep stosb; blast chars to buffer
+   157                                         
+   158                                         ;restore registers
+   159 00000075 5F                             pop edi
+   160 00000076 59                             pop ecx
+   161 00000077 5B                             pop ebx
+   162 00000078 58                             pop eax
+   163 00000079 C3                             ret; return control to caller
+   164                                  
+   165                                  
+   166                                  
+   167                                  ;------------------------------------------------------------------
+   168                                  ;Ruler: Generates a "1234567890"-style ruler at X,Y in text buffer
+   169                                  ;IN: X position (row #) in EBX
+   170                                  ;    Y position (col #) in EAX
+   171                                  ;    length of ruler in chars in ECX
+   172                                  ;RETURN: Nothing
+   173                                  ;MODIFIES: VidBuff
+   174                                  ;CALLS: Nothing
+   175                                  ;Description: Write a ruler to vidbuff at the given X,Y
+   176                                  
+   177                                  
+   178                                  Ruler: ;save registers
+   179 0000007A 50                             push eax
+   180 0000007B 53                             push ebx
+   181 0000007C 51                             push ecx
+   182 0000007D 57                             push edi
+   183                                  
+   184 0000007E BF[00000000]                   mov edi, VidBuff; edi = VidBuff pointer
+   185                                         ;move down 1 in X,Y for addr calculation
+   186 00000083 48                             dec eax
+   187 00000084 4B                             dec ebx
+   188                                  
+   189 00000085 B451                           mov ah, COLS; move screen width to ah
+   190 00000087 F6E4                           mul ah; multiply ah*al store result in ax
+   191 00000089 01C7                           add edi, eax; add Y offset to edi
+   192 0000008B 01DF                           add edi, ebx; add X offset to edi
+   193                                  
+   194                                         ;EDI holds address of start of Ruler. Now lets display it start at '1'
+   195                                  
+   196 0000008D B031                           mov al,'1';store dat byte (becuase ascii we can just inc or dec to get digits 1-9
+   197                                         
+   198 0000008F AA                             DoChar: stosb; Note no REP prefix! (what?)
+   199 00000090 0431                                   add al, '1' ;bump char in al up by 1
+   200 00000092 37                                     aaa; adjust ax for BCD addition
+   201 00000093 0430                                   add al, '0'; make sure we have binary 3 in al's high nybble
+   202 00000095 E2F8                                   loop DoChar; loop to ECX=0
+   203                                  
+   204                                                 ;restore registers
+   205 00000097 5F                                     pop edi
+   206 00000098 59                                     pop ecx
+   207 00000099 5B                                     pop ebx
+   208 0000009A 58                                     pop eax
+   209                                  
+   210 0000009B C3                                     ret; return control to caller
+   211                                  
+   212                                  
+   213                                  ;------------------------------------------------------------------
+   214                                  ;MAIN PROG
+   215                                  
+   216                                  _start:
+   217 0000009C 90                             nop ;for the debugs
+   218                                  
+   219                                  
+   220                                        ;Clear console and init text buff
+   221                                        ClearTerminal; send clear screen escape sequence to terminal (macro
+    32 0000009D 60                  <1>  pushad
+    33 0000009E B804000000          <1>  mov eax, 4
+    34 000000A3 BB01000000          <1>  mov ebx, 1
+    35 000000A8 B9[22000000]        <1>  mov ecx, ClrHome
+    36 000000AD BA0C000000          <1>  mov edx, CLRLEN
+    37 000000B2 CD80                <1>  int 80h
+    38 000000B4 61                  <1>  popad
+   222 000000B5 E85FFFFFFF                    call ClrVid; clear VidBuff before use
+   223                                  
+   224                                        ;Display top ruler
+   225 000000BA B801000000                    mov eax, 1; load Y to AL
+   226 000000BF BB01000000                    mov ebx, 1; load X to BL
+   227 000000C4 B950000000                    mov ecx, COLS-1; load ruler length
+   228 000000C9 E8ACFFFFFF                    Call Ruler; display ruler
+   229                                  
+   230                                        ;Loop through and graph dataset
+   231 000000CE BE[00000000]                  mov esi, Dataset; esi = Dataset pointer
+   232 000000D3 BB01000000                    mov ebx, 1; start all bars at left margin x=1 ( so we dont overwrite ruler?)
+   233 000000D8 BD00000000                    mov ebp, 0; dataset index starts at 0
+   234                                  
+   235 000000DD 89E8                          .blast: mov eax, ebp; add dataset num to element index
+   236 000000DF 83C002                        add eax, STRTROW; offset row by row num of first bar
+   237 000000E2 8A0C2E                        mov cl, byte[esi+ebp]; put dataset val in low byte of ECX
+   238 000000E5 83F900                        cmp ecx, 0; see if we pulled a 0 from the dataset
+   239 000000E8 7408                          je .rule2; if we pulled a zero were done
+   240 000000EA E86EFFFFFF                    call WrtHB; graph data as a horizontal bar
+   241 000000EF 45                            inc ebp; Increment dataset element index
+   242 000000F0 EBEB                          jmp .blast; do another bar
+   243                                  
+   244 000000F2 89E8                          .rule2: mov eax, ebp; Use dataset counter to set ruler row
+   245 000000F4 83C002                                add eax, STRTROW; Bia row#
+   246 000000F7 BB01000000                            mov ebx,1; Load X to bl
+   247 000000FC B950000000                            mov ecx, COLS-1; load ruler length
+   248 00000101 E874FFFFFF                            call Ruler; write ruler to buffer
+   249                                  
+   250                                        ;Write informative message on last line
+   251 00000106 BE[0F000000]                  mov esi, Message; esi = message pointer
+   252 0000010B B913000000                    mov ecx, MSGLEN; ecx=length of message
+   253 00000110 BB51000000                    mov ebx, COLS; ebx = screen width
+   254                                  
+   255 00000115 29CB                          sub ebx, ecx; Calc diff of message length and screen width
+   256 00000117 D1EB                          shr ebx, 1; diff/=2
+   257 00000119 B818000000                    mov eax, 24; set message row to line 24
+   258 0000011E E81FFFFFFF                    call WrtLn; display message
+   259                                  
+   260                                  
+   261                                        ;write one more time before exit
+   262 00000123 E8D8FEFFFF                    call Show; display graph
+   263                                  
+   264                                        Exit:; exit prog
+   265 00000128 B801000000                    mov eax,1; sys_exit
+   266 0000012D BB00000000                    mov ebx,0; exit code = 0
+   267 00000132 CD80                          int 80h; make call

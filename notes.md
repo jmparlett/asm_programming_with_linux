@@ -510,123 +510,15 @@ Local is data that is accessible only to a particular procedure or in some cases
 when a procedure is called. When your program calls a procedure it can pass data down to that by procedureby using push one or more times before
 the call instruction. The procedure can access these items how you can imagine, *but you must be aware the return address is in front of these items.*
 
-### External Libraries
-Just like in C you can provide header files containing procedures to a asm program. These files will be combined at compile time and you will be able to utilize methods declared in those files in the main program.
-You must tell NASM that a procedure will be provided in an external file by labling it as external. ```Extern MyProc```. The procedure must be declared global in the header file to be referenced outside of it.
-```Global MyProc```
+#Chapter 11 Strings and Things
 
-*External modules do not contain a main program and have no start address (no _start: label)*
-*External modules do not return to linux (never make a sys_exit call within a module)*
+Strings in assembly are not just a collection of printable characters. They are still most similar to cstrings, but not really. In assembly *a string is any contiguous group of bytes in memory* 
+of any arbitratry size that the OS allows.
 
-You can have multiple externs in one statement such as
-```Extern printline, dumplin```
-It is a good idea to group externs accordingly.
-```
-GLOBAL ClearLine, DumpChar, Newlines, PrintLine   ; Procedures
-GLOBAL DumpLin, HexDigits, BinDigits              ; Data items
-```
+### String Instruction Assumptions
+A source string is pointed to by ESI
+A destination string is pointed to by EDI
+The length of both kinds of strings is the value you place in ECX. How this length is acted upon by the CPU depends on the specific instruction and how its being used.
+Data coming from a source string or going to a destination string must begin the trip from, end the trip at, or pass through register EAX.
 
-To link library files you must provide the object files to the linux loader.
-```
-hexdump3: hexdump3.o
-   ld -o hexdump3 hexdump3.o ../textlib/textlib.o
-   hexdump3.o: hexdump3.asm
-   nasm -f elf -g -F stabs hexdump3.asm
-```
-
-*I powerfully recommend adding a comment header to every procedure you write, no matter how simple.*
-
-Such a header should at least contain the following information:
-    The name of the procedure
-    The date it was last modified
-    The name of each entry point, if the procedure has multiple entry points
-    What the procedure does
-
-    What data items the caller must pass to it to make it work correctly
-
-    What data (if any) is returned by the procedure, and where that data is returned (for example, in register ECX)
-
-    What registers or data items the procedure modifies
-
-    What other procedures, if any, are called by the procedure
-
-    Any "gotchas" that need to be kept in mind while writing code that uses the procedure
-
-    In addition to that, other information is sometimes helpful in comment headers:
-
-    The version of the procedure, if you use versioning
-
-    The date it was created
-
-    The name of the person who wrote the procedure, if you're dealing with code shared within a team
-
-
-Example:
-```
-;-----------------------------------------------------------------------
-; LoadBuff:    Fills a buffer with data from stdin via INT 80h sys_read
-; UPDATED:     4/15/2009
-
-; IN:          Nothing
-; RETURNS:     # of bytes read in EBP
-; MODIFIES:    ECX, EBP, Buff
-; CALLS:       Kernel sys_read
-; DESCRIPTION: Loads a buffer full of data (BUFFLEN bytes) from stdin
-;              using INT 80h sys_read and places it in Buff. Buffer
-;              offset counter ECX is zeroed, because we're starting in
-;              on a new buffer full of data. Caller must test value in
-;              EBP: If EBP contains zero on return, we hit EOF on stdin.
-;              Less than 0 in EBP on return indicates some kind of error.
-```
-
-
-LinuxAsmTools: http://linuxasmtools.net/ ;(a assembly library for controling cursor movement)
-
-
-### Macros
-Macros exist in assembly simlarly to C. They begin and end with the macro% and endmacro% directives.
-
-```
-%macro ClrScr 0
-     push eax        ; Save pertinent registers
-     push ebx
-     push ecx
-     push edx
-    ; Use WriteStr macro to write control string to console:
-     WriteStr ClearTerm,CLEARLEN
-     pop edx         ; Restore pertinent registers
-     pop ecx
-     pop ebx
-     pop eax
-     %endmacro
-```
-
-Notice that the %endmacro tag occurs after the last line. Macros are "called" by just typing the name inline.
-```
-ClrScr
-```
-
-Macros take arguemnts
-```
-WriteCtr 12,AdMsg,ADDLEN
-```
-Arguments are parsed by %# where # is the arg number.
-```
-%macro WriteCtr 3      ; %1 = row; %2 = String addr; %3 = String length
-      push ebx        ; Save caller's EBX
-      push edx        ; Save caller's EDX
-      mov edx,%3      ; Load string length into EDX
-
-      xor ebx,ebx     ; Zero EBX
-      mov bl,SCRWIDTH ; Load the screen width value to BL
-      sub bl,dl       ; Calc diff. of screen width and string length
-      shr bl,1        ; Divide difference by two for X value
-      GotoXY bl,%1    ; Position the cursor for display WriteStr %2,%3  ; Write the string to the console pop edx         ; Restore caller's EDX pop ebx         ; Restore caller's EBX %endmacro
-```
-The 3 after WriteCtr indicates that this macro takes 3 arguments. Registers can be passed as arguments. All labels defined within a macro are considered local to that macro and begin with a %%. Jump to labels not defined in a macro is as normal
-but if referencing a label made inside a macro use %%.
-
-Macros libraries can be included in your program with the include directive.
-```
-%include "mylib.mac"
-```
+The names of ESI and EDI can lend some context to these rules. ESI = "extened source index", EDI = "extended destination index"

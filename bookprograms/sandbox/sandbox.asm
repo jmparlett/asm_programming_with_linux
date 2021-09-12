@@ -87,9 +87,12 @@ _start: ;this seems to be basically the main function
   ; div ebx  ;look in eax
 
 
-  mov eax, 4; sys_write
-  mov ebx, 1; stdout
-  mov ecx, sums; sums addr
-  mov edx, sumslen;
+  ; mov eax, 4; sys_write
+  ; mov ebx, 1; stdout
+  ; mov ecx, sums; sums addr
+  ; mov edx, sumslen;
 
+
+
+  
   section .bss ;this sections stores uninited data
