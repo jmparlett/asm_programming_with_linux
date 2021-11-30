@@ -153,7 +153,7 @@ which has the subtle job of making sure your assembly program does what its supp
 5. Go back to step 1 and fix any mistakes / write new code
 6. Repeat 1-5 till done.
 
-You can copy a 16 bit reg into a 32 bit you must reference the same size segment.
+You cannot copy a 16 bit reg into a 32 bit you must reference the same size segment.
 
 ## !!!
 Because the book is written for IA-32 there are some difference in the compilation process.
