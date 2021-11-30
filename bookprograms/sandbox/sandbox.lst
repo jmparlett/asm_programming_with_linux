@@ -4,95 +4,118 @@
      3 0000000C 31352C31322C362C30-     sums: dd "15,12,6,0,21,14,4,0,0,10"
      3 00000015 2C32312C31342C342C-
      3 0000001E 302C302C3130       
-     4                                  sumslen equ $-sums; length
-     5 00000024 61                      a: db "a"
-     6 00000025 62                      b: db "b"
-     7 00000026 616263                  abc: db "abc"
+     4                                  
+     5 00000024 616263646566676869-     EditBuff: db 'abcdefghiklm         ' 
+     5 0000002D 6B6C6D202020202020-
+     5 00000036 202020             
+     6                                  ENDPOS equ 12
+     7                                  INSRTPOS equ 5
      8                                  
-     9                                  section .text ;text go here?
-    10                                  
-    11                                    global _start
-    12                                  
-    13                                  _start: ;this seems to be basically the main function
-    14                                    ;program needs to go between the two nops
-    15 00000000 90                        nop ;nop 1 
-    16                                    ;***1***** mov demo
-    17                                    ; mov ax, 067FEh;store hex to ax
-    18                                    ; mov bx, ax; copy hex to bx
-    19                                    ; mov cl, bh; store first byte of bx in low byte of cx
-    20                                    ; mov ch, bl; store second byte of bx to high byte of cx
-    21                                    ; xchg cl, ch; swap low and high of cx
-    22                                    ;****1****
-    23                                  
-    24                                    ;*****2***** move by size and mem location demo
-    25                                    ; mov al, [hi]
-    26                                    ; mov [hi], byte 'G';puts a g at the beginning of hi
-    27                                    ; mov [hi+5], byte '!'; replaces the sixth character in hi with a !
-    28                                    ;*****2*****
-    29                                  
-    30                                    ;*****3***** flags demo
-    31                                    ; mov eax, 0ffffffffh
-    32                                    ; mov ebx, 02dh
-    33                                    ; inc eax
-    34                                    ; dec ebx
-    35                                    ; nop ;nop 2
-    36                                    ;*****3*****
-    37                                  
-    38                                  
-    39                                    ;*****4***** Jump if zero demo
-    40                                    ; mov eax, 5; run loop 5 times
-    41                                    ; Jonathan: dec eax ;this is a label
-    42                                      ; jnz Jonathan ; jump to label provided if result of last operation wasn't zero
-    43                                    ;*****4***** Jump if zero demo
-    44                                  
-    45                                    
-    46                                    ;*****5***** infinite loop
-    47                                    ; mov eax, 5
-    48                                    ; j:dec eax
-    49                                      ; jmp j
-    50                                    ;*****5***** infinite loop
-    51                                  
-    52                                  
-    53                                    ;*****6***** 
-    54                                    ; mov eax, 42
-    55                                    ; neg eax
-    56                                    ; add eax, 42
+     9                                  sumslen equ $-sums; length
+    10 00000039 61                      a: db "a"
+    11 0000003A 62                      b: db "b"
+    12 0000003B 616263                  abc: db "abc"
+    13                                  
+    14                                  section .text ;text go here?
+    15                                  
+    16                                    global _start
+    17                                  
+    18                                  _start: ;this seems to be basically the main function
+    19                                    ;program needs to go between the two nops
+    20 00000000 90                        nop ;nop 1 
+    21                                    ;***1***** mov demo
+    22                                    ; mov ax, 067FEh;store hex to ax
+    23                                    ; mov bx, ax; copy hex to bx
+    24                                    ; mov cl, bh; store first byte of bx in low byte of cx
+    25                                    ; mov ch, bl; store second byte of bx to high byte of cx
+    26                                    ; xchg cl, ch; swap low and high of cx
+    27                                    ;****1****
+    28                                  
+    29                                    ;*****2***** move by size and mem location demo
+    30                                    ; mov al, [hi]
+    31                                    ; mov [hi], byte 'G';puts a g at the beginning of hi
+    32                                    ; mov [hi+5], byte '!'; replaces the sixth character in hi with a !
+    33                                    ;*****2*****
+    34                                  
+    35                                    ;*****3***** flags demo
+    36                                    ; mov eax, 0ffffffffh
+    37                                    ; mov ebx, 02dh
+    38                                    ; inc eax
+    39                                    ; dec ebx
+    40                                    ; nop ;nop 2
+    41                                    ;*****3*****
+    42                                  
+    43                                  
+    44                                    ;*****4***** Jump if zero demo
+    45                                    ; mov eax, 5; run loop 5 times
+    46                                    ; Jonathan: dec eax ;this is a label
+    47                                      ; jnz Jonathan ; jump to label provided if result of last operation wasn't zero
+    48                                    ;*****4***** Jump if zero demo
+    49                                  
+    50                                    
+    51                                    ;*****5***** infinite loop
+    52                                    ; mov eax, 5
+    53                                    ; j:dec eax
+    54                                      ; jmp j
+    55                                    ;*****5***** infinite loop
+    56                                  
     57                                  
-    58                                    ; not worth counting
-    59                                    ; mov eax, 07fffffffh
-    60                                    ; inc eax,
-    61                                  
-    62                                    ; xor eax, eax
-    63                                    ; mov ax, -42
-    64                                    ; mov ebx, eax
-    65                                    ; xor eax, eax
-    66                                    
-    67                                    ; mov ax, -42
-    68                                    ; movsx ebx, ax
-    69                                  
-    70                                  
-    71                                    ;******7****** mul demo
-    72                                    ; mov eax, 447 ;smaller than 16^3
-    73                                    ; mov ebx, 1739;smaller then 16^3
-    74                                    ; mul ebx  ;product wont overflow from a single reg since it will be less then 16^6
-    75                                    ; look in eax for val
-    76                                  
-    77                                    ; xor eax, eax
-    78                                    ; xor ebx, ebx
-    79                                    ; mov eax, 0ffffffffh ;16^8 will definetly overflow
-    80                                    ; mov ebx, 03b72h ; < 16^5
-    81                                    ; mul ebx; look in eax/edx
-    82                                  
-    83                                  
-    84                                    ;******8****** div demo
-    85                                    ; mov ebx, 010h
-    86                                    ; mov eax, 020h
-    87                                    ; div ebx  ;look in eax
+    58                                    ;*****6***** 
+    59                                    ; mov eax, 42
+    60                                    ; neg eax
+    61                                    ; add eax, 42
+    62                                  
+    63                                    ; not worth counting
+    64                                    ; mov eax, 07fffffffh
+    65                                    ; inc eax,
+    66                                  
+    67                                    ; xor eax, eax
+    68                                    ; mov ax, -42
+    69                                    ; mov ebx, eax
+    70                                    ; xor eax, eax
+    71                                    
+    72                                    ; mov ax, -42
+    73                                    ; movsx ebx, ax
+    74                                  
+    75                                  
+    76                                    ;******7****** mul demo
+    77                                    ; mov eax, 447 ;smaller than 16^3
+    78                                    ; mov ebx, 1739;smaller then 16^3
+    79                                    ; mul ebx  ;product wont overflow from a single reg since it will be less then 16^6
+    80                                    ; look in eax for val
+    81                                  
+    82                                    ; xor eax, eax
+    83                                    ; xor ebx, ebx
+    84                                    ; mov eax, 0ffffffffh ;16^8 will definetly overflow
+    85                                    ; mov ebx, 03b72h ; < 16^5
+    86                                    ; mul ebx; look in eax/edx
+    87                                  
     88                                  
-    89                                  
-    90 00000001 B804000000                mov eax, 4; sys_write
-    91 00000006 BB01000000                mov ebx, 1; stdout
-    92 0000000B B9[0C000000]              mov ecx, sums; sums addr
-    93 00000010 BA18000000                mov edx, sumslen;
+    89                                    ;******8****** div demo
+    90                                    ; mov ebx, 010h
+    91                                    ; mov eax, 020h
+    92                                    ; div ebx  ;look in eax
+    93                                  
     94                                  
-    95                                    section .bss ;this sections stores uninited data
+    95                                    ; mov eax, 4; sys_write
+    96                                    ; mov ebx, 1; stdout
+    97                                    ; mov ecx, sums; sums addr
+    98                                    ; mov edx, sumslen;
+    99                                  
+   100                                  
+   101                                    ;movs demo shifting a string right by one position
+   102 00000001 FD                        std; moving down in memory
+   103 00000002 BB[29000000]              mov ebx, EditBuff+INSRTPOS; address of insert point
+   104 00000007 BE[30000000]              mov esi, EditBuff+ENDPOS; start at end of string
+   105 0000000C BF[31000000]              mov edi, EditBuff+ENDPOS+1; Bump text right by 1
+   106 00000011 B908000000                mov ecx, ENDPOS-INSRTPOS+1; # chars to bump
+   107 00000016 F3A4                      rep movsb; bump string
+   108 00000018 C60346                    mov byte [ebx], 'F'; Fs in the beginning of string
+   109                                    
+   110 0000001B 90                        nop
+   111                                  
+   112                                  
+   113                                  
+   114                                    section .bss ;this sections stores uninited data
+   115                                  
+   116                                  

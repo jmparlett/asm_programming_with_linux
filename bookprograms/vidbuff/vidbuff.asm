@@ -195,7 +195,7 @@ Ruler: ;save registers
 
        mov al,'1';store dat byte (becuase ascii we can just inc or dec to get digits 1-9
        
-       DoChar: stosb; Note no REP prefix! (what?)
+       DoChar: stosb; Note no REP prefix! The rep prefix "repeats" until ecx is 0 so this loop is an example of us controling the execution of stosb
                add al, '1' ;bump char in al up by 1
                aaa; adjust ax for BCD addition
                add al, '0'; make sure we have binary 3 in al's high nybble

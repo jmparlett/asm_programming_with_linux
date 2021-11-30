@@ -510,15 +510,55 @@ Local is data that is accessible only to a particular procedure or in some cases
 when a procedure is called. When your program calls a procedure it can pass data down to that by procedureby using push one or more times before
 the call instruction. The procedure can access these items how you can imagine, *but you must be aware the return address is in front of these items.*
 
-#Chapter 11 Strings and Things
+# Chapter 11 Strings and Things
 
 Strings in assembly are not just a collection of printable characters. They are still most similar to cstrings, but not really. In assembly *a string is any contiguous group of bytes in memory* 
 of any arbitratry size that the OS allows.
 
 ### String Instruction Assumptions
-A source string is pointed to by ESI
-A destination string is pointed to by EDI
-The length of both kinds of strings is the value you place in ECX. How this length is acted upon by the CPU depends on the specific instruction and how its being used.
-Data coming from a source string or going to a destination string must begin the trip from, end the trip at, or pass through register EAX.
+1. A source string is pointed to by ESI
+2. A destination string is pointed to by EDI
+3. The length of both kinds of strings is the value you place in ECX. How this length is acted upon by the CPU depends on the specific instruction and how its being used.
+4. Data coming from a source string or going to a destination string must begin the trip from, end the trip at, or pass through register EAX.
 
-The names of ESI and EDI can lend some context to these rules. ESI = "extened source index", EDI = "extended destination index"
+The names of ESI and EDI can lend some context to these rules. ESI = "extended source index", EDI = "extended destination index"
+
+### STOSB
+The stosb instruction is invoked with the following syntax **<rep stosb>**
+
+REP: this is a prefix. A prefix changes how the CPU treats the instruction being called.
+
+STOSB = STOre String by byte. 
+stosb expects the following when it is called.
+
+EDI = address of destination string
+ECX = number of times the value in AL is stored to the string.
+AL = value to be stored to string
+
+just invoking stosb without the rep prefix will cause it to place the value in the string and inc EDI however it will not dec ECX and continue executing.
+It will only do that if you have the rep (repeat) prefix in front of the call. This means you could do the decrementing and calling of stosb repeatadly your self
+potentially taking some other actions between calls. This could allow you do stuff like alternate values in a string, even say place the alphabet in the dest
+string by setting AL to 'a' and calling inc AL each time.
+
+An important part of string instructions is DF (the direction flag). When DF is unset(0) string instructions run uphill in memory. From a low address to a high 
+address. Conversely when it is set(1) string instructions run from high to low. An easy example if clearing the ClrVid in the VidBuff program. If you set DF to 1
+and placed length of (VidBuff_start_addr + VidBuff_len-1) in EDI and called stosb, it is the same as setting DF to 0 and placing the start address of the buff in EDI
+then calling stosb. For most things its probably preferable to work high to low, but I'm sure using it in reverse will come in handy some times.
+
+CLD: this instructions clears DF to 0
+STD: this instruction sets DF to 1
+
+LOOP: This instruction is pretty clutch. It basically does what rep does for stosb. That is it works off the value stored in ECX. It decs ecx each time it is reached
+      and if ECX=0 it proceeds to the next instruction. Basically combines a dec, test, and conditional jmp, instruction into one. 
+
+      Loop syntax: <loop (label to jmp to if ecx!=0)>
+
+There different sizes of the "stos" instruction. STOSB = stos byte, STOSW = stos word (2 bytes), STOSD = stos dword, etc. There is probably a 64bit version of STOS as well.
+In each memory transfer operation, ECX is always decremented by one. ECX counts operations and knows nothing about memory addresses.
+
+### MOVSB
+the movs string instruction also comes in multiple sizes, movsb. movsw, etc. Basically a block of memory data stored at the address in ESI is copied to
+the address stored in EDI. The number of bytes to be moved is placed in the ECX register. ECX counts down after each byte is copied, and the address in ESI
+and EDI are adjusted by one (either dec or inc based on DF).
+
+
